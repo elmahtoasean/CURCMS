@@ -8,7 +8,7 @@ import {
 } from "react-icons/fa";
 
 import AssignedPapersTable from "../../components/Reviewer/AssignedPapersTable";
-import StatCard from "../../components/Common/StatCard";
+import StatCard from "../../components/Common/statCard";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:8000/api";

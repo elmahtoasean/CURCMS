@@ -16,8 +16,41 @@ const vine = new Vine();
 // In-memory storage for pending registrations (use Redis in production)
 const pendingRegistrations = new Map();
 
+const stripTrailingSlashes = (value = "") => value.replace(/\/+$/, "");
+
 const resolveEmailVerificationSecret = () =>
   process.env.EMAIL_VERIFY_SECRET || process.env.JWT_SECRET;
+
+const resolveAppUrlBase = (req) => {
+  const configuredBase = process.env.APP_URL;
+  if (configuredBase) {
+    return stripTrailingSlashes(configuredBase);
+  }
+
+  const forwardedProto = req.headers["x-forwarded-proto"]
+    ?.split(",")[0]
+    ?.trim();
+  const forwardedHost = req.headers["x-forwarded-host"]
+    ?.split(",")[0]
+    ?.trim();
+
+  if (forwardedProto && forwardedHost) {
+    return stripTrailingSlashes(`${forwardedProto}://${forwardedHost}`);
+  }
+
+  const host = req.get("host");
+  if (host) {
+    const protocol =
+      forwardedProto ||
+      req.headers["x-forwarded-protocol"]?.split(",")[0]?.trim() ||
+      req.protocol ||
+      "http";
+
+    return stripTrailingSlashes(`${protocol}://${host}`);
+  }
+
+  return "http://localhost:8000";
+};
 
 const getDisallowedEmailDomains = () => {
   const configuredDomains = process.env.DISALLOWED_EMAIL_DOMAINS;
@@ -68,6 +101,7 @@ class AuthController {
         return res.status(400).json({
           wrongEmailDomain: true,
           disallowedDomain: emailDomain,
+          message: "Please use your official university email address.",
           errors: {
             email: "Please use your official university email address.",
           },
@@ -176,7 +210,7 @@ class AuthController {
       pendingRegistrations.set(verifyToken, registrationData);
 
       //! Send verification email
-      const appUrlBase = process.env.APP_URL || "http://localhost:8000";
+      const appUrlBase = resolveAppUrlBase(req);
       const verifyLink = `${appUrlBase}/api/auth/verify/${verifyToken}`;
       const emailJobPayload = [
         {

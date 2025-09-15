@@ -50,7 +50,7 @@ import AdminTeamDetails from "./Pages/Admin/AdminTeamDetails";
 
 //! Auth and utils
 import PrivateRoute from "./context/PrivateRoute.jsx";
-import Homepage from "./Pages/Home/Homepage.jsx";
+import Homepage from "./Pages/home/Homepage.jsx";
 import ProfilePage from "./Pages/Profile/ProfilePage.jsx";
 import PreferencePage from "./Pages/Preference/PreferencePage.jsx";
 

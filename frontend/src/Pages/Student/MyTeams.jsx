@@ -7,10 +7,10 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 // import { useNavigate } from 'react-router-dom';
-// import StatCard from '../../components/common/statcard';
+// import StatCard from "../../components/Common/StatCard";
 // import PendingApplications from '../../components/teacher/TeamManagement/PendingApplication';
 // import TeamCard from '../../components/teacher/TeamManagement/TeamCard';
-import StatCard from "../../components/Common/statcard";
+import StatCard from "../../components/Common/StatCard";
 import TeamCard from "../../components/Common/TeamCard";
 
 const MyTeams = () => {

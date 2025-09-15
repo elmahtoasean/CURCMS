@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import StatCard from "../../components/Common/statcard";
+import StatCard from "../../components/Common/StatCard";
 import ReviewerRow from "../../components/Admin/ReviewerRow";
 import { Users, CheckCircle, Clock, UserPlus } from "lucide-react";
 import CommonButton from "../../components/Common/CommonButton";

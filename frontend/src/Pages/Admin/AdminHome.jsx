@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaCheckCircle, FaClock, FaUpload, FaClipboard } from "react-icons/fa";
-import StatCard from "../../components/Common/statcard";
+import StatCard from "../../components/Common/StatCard";
 import ChartCard from "../../components/Common/ChartCard";
 import ReviewerWorkload from "../../components/Common/ReviewerWorkload";
 import AdminRecentSubmission from "../../components/Admin/AdminRecentSubmissions";

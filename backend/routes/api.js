@@ -6,7 +6,6 @@ import reviewerOnly from "../middleware/reviewerOnly.js";
 import ProfileController from "../controllers/ProfileController.js";
 import NewsController from "../controllers/NewsController.js";
 import ReviewerController from "../controllers/admin/ReviewerController.js";
-//import redisCache from "../DB/redis.config.js";
 import TeamController from "../controllers/teacher/TeamController.js";
 import TeamDetails from "../controllers/teacher/TeamDetails.js";
 import PaperController from "../controllers/teacher/PaperController.js";
@@ -60,7 +59,7 @@ router.get('/departments', authMiddleware, ProfileController.getDepartments);
 router.get('/domains', authMiddleware, ProfileController.getDomains);
 
 //! News Routes
-router.get("/news", NewsController.index); // redisCache.route({expire:60*30}) o llikha jay  at least 30 min
+router.get("/news", NewsController.index);
 router.post("/news", authMiddleware, NewsController.store);
 router.get("/news/:id", NewsController.show);
 router.put("/news/:id", authMiddleware, NewsController.update);
@@ -199,7 +198,6 @@ router.get(
   "/assignments/waiting",
   authMiddleware,
   adminOnly,
-  //redisCache.route(), 
   AssignmentController.getWaitingAssignments
 );
 // Get papers/proposals waiting for assignment

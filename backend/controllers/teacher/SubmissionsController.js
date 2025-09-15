@@ -1,6 +1,5 @@
 // controllers/SubmissionController.js
 import db from "../../DB/db.config.js";
-import redis from "../../DB/redis.client.js";
 
 const fileBase = process.env.FILE_BASE_URL || "http://localhost:3000/files";
 
@@ -14,10 +13,6 @@ class SubmissionsController {
         try {
             const userId = Number(req.user?.user_id ?? req.user?.id);
             if (!userId) return res.status(400).json({ message: "Missing user id" });
-
-            const cacheKey = `/api/submissions:${userId}:${JSON.stringify(req.query)}`;
-            const cached = await redis.get(cacheKey);
-            if (cached) return res.status(200).json({ data: JSON.parse(cached), fromCache: true });
 
             // Is the user also a teacher?
             const teacher = await db.teacher.findFirst({
@@ -156,7 +151,6 @@ class SubmissionsController {
                 items.sort((a, b) => new Date(b.submitted) - new Date(a.submitted));
             }
 
-            await redis.setex(cacheKey, 20, JSON.stringify(items));
             return res.status(200).json({ data: items, fromCache: false });
         } catch (err) {
             console.error("SubmissionController.list error:", err);

@@ -1,6 +1,4 @@
 import db from "../../DB/db.config.js";
-import redis from "../../DB/redis.client.js";
-import { userTeamsKey, teamDetailsKey } from "../../utils/cacheKeys.js";
 import { Vine, errors } from "@vinejs/vine";
 
 class TeamDetails {
@@ -9,12 +7,6 @@ class TeamDetails {
         try {
             const userId = req.user?.user_id;
             if (!userId) return res.status(400).json({ message: "User ID not found" });
-
-            const cacheKey = userTeamsKey(userId);
-            const cached = await redis.get(cacheKey);
-            if (cached) {
-                return res.status(200).json({ data: JSON.parse(cached), fromCache: true });
-            }
 
             const team = await db.team.findMany({
                 where: { teammember: { some: { user_id: Number(userId) } } },
@@ -35,7 +27,6 @@ class TeamDetails {
 
             // FIX: check the right variable
             if (!team.length) {
-                await redis.setex(cacheKey, 30, JSON.stringify([]));
                 return res.status(200).json({ message: "No teams found", data: [] });
             }
 
@@ -52,8 +43,6 @@ class TeamDetails {
             }));
 
             // FIX: cache after defining teams
-            await redis.setex(cacheKey, 30, JSON.stringify(teams));
-
             return res.status(200).json({ data: teams, fromCache: false });
         } catch (error) {
             console.error("Error fetching teams:", error);
@@ -66,15 +55,6 @@ class TeamDetails {
             const teamId = Number(req.params.id);
             if (!teamId) {
                 return res.status(400).json({ message: "Invalid team ID" });
-            }
-
-            //* Check cache first
-            const cacheKey = teamDetailsKey(teamId);
-            const cached = await redis.get(cacheKey);
-            if (cached) {
-                return res
-                    .status(200)
-                    .json({ data: JSON.parse(cached), fromCache: true });
             }
 
             const team = await db.team.findUnique({
@@ -175,8 +155,6 @@ class TeamDetails {
                 })),
             };
 
-            //* Cache the result for 30 seconds
-            await redis.setex(cacheKey, 30, JSON.stringify(teamCardData)); // 30s TTL
             return res.status(200).json({ data: teamCardData, fromCache: false });
         } catch (error) {
             console.error("Error fetching team details:", error);
@@ -235,24 +213,6 @@ class TeamDetails {
                     },
                 });
                 addedMembers.push(tm);
-            }
-
-            // Clear Redis cache
-            //   try {
-            //     await redis.del("/api/teams");
-            //   } catch (err) {
-            //     console.error("Redis clear:", err);
-            //   }
-
-            //* Invalidate affected caches
-            try {
-                await redis.del(teamDetailsKey(teamId));
-                // Invalidate "my teams" for each newly added member
-                for (const m of addedMembers) {
-                    await redis.del(userTeamsKey(Number(m.user_id)));
-                }
-            } catch (err) {
-                console.error("Redis invalidate error:", err);
             }
 
             return res.status(201).json({
@@ -609,21 +569,6 @@ class TeamDetails {
                     created_by_user_id: true,
                 },
             });
-
-            // Invalidate caches
-            try {
-                await redis.del(teamDetailsKey(teamId));
-                // Invalidate "my teams" for creator + all members
-                const affectedUserIds = new Set([
-                    Number(updated.created_by_user_id),
-                    ...team.teammember.map((m) => Number(m.user_id)),
-                ]);
-                for (const uid of affectedUserIds) {
-                    if (uid) await redis.del(userTeamsKey(uid));
-                }
-            } catch (e) {
-                console.error("Redis invalidate error (updateStatus):", e);
-            }
 
             return res.status(200).json({
                 message: "Team status updated",

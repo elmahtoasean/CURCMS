@@ -9,7 +9,6 @@ import { Vine, errors } from "@vinejs/vine";
 import { PrismaClient } from "@prisma/client";
 import NewsApiTransform from "../transform/newApiTransform.js";
 import { error } from "console";
-import redisCache from "../DB/redis.config.js";
 import logger from "../config/logger.js";
 
 const prisma = new PrismaClient();
@@ -103,11 +102,6 @@ class NewsController {
       //* store in DB
       const news = await prisma.news.create({
         data: payload,
-      });
-
-      //! remove cache
-      redisCache.del("/api/news", (err) => {
-        if(err) throw err;
       });
 
       //* returning success msg alongwith the news created

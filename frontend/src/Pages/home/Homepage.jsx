@@ -1,5 +1,5 @@
 import AcceptedPaper from "../../components/home/AcceptedPaper";
-import Header from "../../components/home/header";
+import Header from "../../components/home/Header";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 

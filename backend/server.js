@@ -22,6 +22,7 @@ app.use(express.urlencoded({ extended: false })); // html form response to json
 const defaultCorsOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "https://curcms-1.onrender.com",
 ]);
 
 const envOrigins = [

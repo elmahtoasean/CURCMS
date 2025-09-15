@@ -11,6 +11,8 @@ import './jobs/SendEmailJob.js';
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+app.set("trust proxy", true);
+
 
 
 //! Middleware before routes

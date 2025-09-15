@@ -1,8 +1,7 @@
 // frontend/src/components/Common/ReviewTable.jsx
 import React from 'react';
 import { Eye, FileText, Download } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
+import { resolveBackendUrl } from '../../config/api';
 
 const ReviewTable = ({ data, loading, pagination, onPageChange }) => {
   const handleViewDetails = (reviewId) => {
@@ -13,9 +12,7 @@ const ReviewTable = ({ data, loading, pagination, onPageChange }) => {
 
   const handleDownloadAttachment = (attachmentPath) => {
     if (attachmentPath) {
-      const downloadUrl = attachmentPath.startsWith('http') 
-        ? attachmentPath 
-        : `${API_BASE_URL.replace('/api', '')}${attachmentPath}`;
+      const downloadUrl = resolveBackendUrl(attachmentPath);
       window.open(downloadUrl, '_blank');
     }
   };

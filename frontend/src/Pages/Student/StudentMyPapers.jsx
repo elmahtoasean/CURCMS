@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import PaperCard from "../../components/Common/PaperCard";
 import FilterBar from "../../components/Common/FilterBar";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const StudentMyPapers = () => {
   // filters
@@ -68,7 +69,7 @@ const StudentMyPapers = () => {
         setError(null);
 
         const res = await axios.get(
-          "http://localhost:8000/api/student/my-teams/papers",
+          resolveApiUrl("/student/my-teams/papers"),
           {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             withCredentials: true,
@@ -91,7 +92,7 @@ const StudentMyPapers = () => {
           aggregatedDecision: (p.aggregated_decision || "").toUpperCase(), // ACCEPT | REJECT | MINOR_REVISIONS | MAJOR_REVISIONS | ""
           reviewers: [],
           comments: 0,
-          fileUrl: p.download_url || null,
+          fileUrl: p.download_url ? resolveBackendUrl(p.download_url) : null,
           domainName: p.team?.domain?.domain_name || null,
         }));
 

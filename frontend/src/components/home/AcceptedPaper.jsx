@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 // Abstract Modal Component
 const AbstractModal = ({ isOpen, onClose, paper }) => {
@@ -112,8 +113,10 @@ const AcceptedPaper = ({
           }
         }
 
-        const url = `http://localhost:8000/api/public/accepted-papers${params.toString() ? `?${params.toString()}` : ''}`;
-        console.log('Fetching papers from:', url);
+        const url = resolveApiUrl(
+          `/public/accepted-papers${params.toString() ? `?${params.toString()}` : ""}`
+        );
+        console.log("Fetching papers from:", url);
 
         const response = await fetch(url);
         
@@ -125,7 +128,11 @@ const AcceptedPaper = ({
         console.log('API Response:', data);
         
         if (data.success) {
-          setPapers(data.papers || []);
+          const normalized = (data.papers || []).map((paper) => ({
+            ...paper,
+            pdf_url: paper.pdf_url ? resolveBackendUrl(paper.pdf_url) : null,
+          }));
+          setPapers(normalized);
         } else {
           throw new Error(data.message || 'Failed to fetch papers');
         }
@@ -148,9 +155,10 @@ const AcceptedPaper = ({
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        console.log('Fetching filters from: http://localhost:8000/api/public/filters');
-        
-        const response = await fetch("http://localhost:8000/api/public/filters");
+        const filtersUrl = resolveApiUrl("/public/filters");
+        console.log("Fetching filters from:", filtersUrl);
+
+        const response = await fetch(filtersUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

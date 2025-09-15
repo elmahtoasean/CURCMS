@@ -1,6 +1,7 @@
 // components/Teacher/TeamActivity.jsx
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 const TeamActivity = ({ scope = "teacher", limit = 12 }) => {
   const [comments, setComments] = useState([]);
@@ -8,14 +9,13 @@ const TeamActivity = ({ scope = "teacher", limit = 12 }) => {
   const [error, setError] = useState(null);
   const didFetch = useRef(false);
 
-  const BASE = "http://localhost:8000";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
   const commentsEndpoint =
     scope === "student"
-      ? `${BASE}/api/student/my-teams/comments`
-      : `${BASE}/api/teacher/my-teams/comments`;
+      ? resolveApiUrl("/student/my-teams/comments")
+      : resolveApiUrl("/teacher/my-teams/comments");
 
   useEffect(() => {
     if (didFetch.current) return; // avoid double-fetch in StrictMode

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import PaperCard from "../../components/Common/PaperCard";
 import FilterBar from "../../components/Common/FilterBar";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const StudentMyProposals = () => {
   // filters
@@ -81,7 +82,7 @@ const StudentMyProposals = () => {
         setError(null);
 
         const res = await axios.get(
-          "http://localhost:8000/api/student/my-teams/proposals",
+          resolveApiUrl("/student/my-teams/proposals"),
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -109,7 +110,7 @@ const StudentMyProposals = () => {
             role: "Contributor",
             reviewers: [],
             comments: 0,
-            fileUrl: p.download_url,
+            fileUrl: p.download_url ? resolveBackendUrl(p.download_url) : null,
           };
         });
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -11,7 +12,6 @@ const StatusDistributionChart = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const BASE_URL = "http://localhost:8000/api";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -42,7 +42,7 @@ const StatusDistributionChart = () => {
   const fetchStatusDistribution = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/admin/status-distribution`, {
+      const response = await axios.get(resolveApiUrl('/admin/status-distribution'), {
         headers,
         withCredentials: true,
       });

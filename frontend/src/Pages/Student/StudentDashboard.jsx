@@ -8,8 +8,9 @@ import {
 import StatCard from "../../components/Common/StatCard";
 import RecentSubmission from "../../components/Common/RecentSubmission";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE = resolveApiUrl();
 
 const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);

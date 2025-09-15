@@ -1,9 +1,9 @@
 import React from "react";
 import { FaDownload, FaEye, FaFilePdf, FaFileAlt } from "react-icons/fa";
 import Card from "./Card";
+import { resolveApiUrl } from "../../config/api";
 
 function TeamPapersCard({ title, papers, icon }) {
-  const BASE_URL = "http://localhost:8000";
 
   const handleView = async (paper) => {
     try {
@@ -11,9 +11,9 @@ function TeamPapersCard({ title, papers, icon }) {
       let viewUrl = '';
       
       if (paper.type === 'paper') {
-        viewUrl = `${BASE_URL}/api/papers/${paper.id}/view`;
+        viewUrl = resolveApiUrl(`/papers/${paper.id}/view`);
       } else if (paper.type === 'proposal') {
-        viewUrl = `${BASE_URL}/api/proposals/${paper.id}/view`;
+        viewUrl = resolveApiUrl(`/proposals/${paper.id}/view`);
       } else {
         // Fallback for older data structure
         alert('Unable to determine document type');
@@ -32,9 +32,9 @@ function TeamPapersCard({ title, papers, icon }) {
       let downloadUrl = '';
       
       if (paper.type === 'paper') {
-        downloadUrl = `${BASE_URL}/api/papers/${paper.id}/download`;
+        downloadUrl = resolveApiUrl(`/papers/${paper.id}/download`);
       } else if (paper.type === 'proposal') {
-        downloadUrl = `${BASE_URL}/api/proposals/${paper.id}/download`;
+        downloadUrl = resolveApiUrl(`/proposals/${paper.id}/download`);
       } else {
         alert('Unable to determine document type');
         return;

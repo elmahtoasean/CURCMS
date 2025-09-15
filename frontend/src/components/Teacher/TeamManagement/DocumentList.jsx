@@ -1,6 +1,7 @@
 // src/components/Teacher/TeamManagement/DocumentList.jsx
 import React, { useState } from 'react';
 import { FaFileAlt, FaTrash, FaDownload, FaUpload, FaEye, FaFilePdf } from 'react-icons/fa';
+import { resolveBackendUrl } from '../../../config/api';
 
 const fmt = (bytes) => {
   if (bytes == null) return '';
@@ -36,7 +37,8 @@ const DocumentList = ({
 
   const handleView = (doc) => {
     if (doc.href) {
-      window.open(`http://localhost:8000/${doc.href}`, '_blank');
+      const targetUrl = resolveBackendUrl(doc.href);
+      window.open(targetUrl, '_blank');
     } else {
       alert('Document not available for viewing.');
     }

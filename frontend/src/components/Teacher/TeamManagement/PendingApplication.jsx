@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserCircle, FaCheck, FaTimes, FaEnvelope, FaIdBadge, FaTags } from 'react-icons/fa';
 import axios from 'axios';
+import { resolveApiUrl } from '../../../config/api';
 
 const PendingApplications = ({ teamId, onApplicationProcessed }) => {
   const [applications, setApplications] = useState([]);
@@ -18,7 +19,7 @@ const PendingApplications = ({ teamId, onApplicationProcessed }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:8000/api/teams/${teamId}/applications`, {
+      const response = await axios.get(resolveApiUrl(`/teams/${teamId}/applications`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setApplications(response.data.data || []);
@@ -35,7 +36,7 @@ const PendingApplications = ({ teamId, onApplicationProcessed }) => {
       setProcessing(prev => ({ ...prev, [applicationId]: true }));
       const token = localStorage.getItem("token");
       
-      await axios.patch(`http://localhost:8000/api/applications/${applicationId}`, {
+      await axios.patch(resolveApiUrl(`/applications/${applicationId}`), {
         status: action.toUpperCase()
       }, {
         headers: { Authorization: `Bearer ${token}` }

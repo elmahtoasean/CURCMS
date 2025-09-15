@@ -2,21 +2,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaRegEye, FaFilter } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const AdminRecentSubmission = ({ limit = 10 }) => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    type: '', // '', 'PAPER', or 'PROPOSAL'
-    startDate: '',
-    endDate: '',
-    teamId: ''
+    type: "", // '', 'PAPER', or 'PROPOSAL'
+    startDate: "",
+    endDate: "",
+    teamId: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const didFetch = useRef(false);
 
-  const BASE = "http://localhost:8000";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -27,30 +27,44 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
 
       // Build query parameters
       const params = new URLSearchParams();
-      if (queryFilters.type) params.append('type', queryFilters.type);
-      if (queryFilters.startDate) params.append('startDate', queryFilters.startDate);
-      if (queryFilters.endDate) params.append('endDate', queryFilters.endDate);
-      if (queryFilters.teamId) params.append('teamId', queryFilters.teamId);
+      if (queryFilters.type) params.append("type", queryFilters.type);
+      if (queryFilters.startDate) params.append("startDate", queryFilters.startDate);
+      if (queryFilters.endDate) params.append("endDate", queryFilters.endDate);
+      if (queryFilters.teamId) params.append("teamId", queryFilters.teamId);
 
-      const response = await axios.get(
-        `${BASE}/api/admin/recent-submissions?${params.toString()}`, 
-        { headers, withCredentials: true }
+      const queryString = params.toString();
+      const url = resolveApiUrl(
+        `/admin/recent-submissions${queryString ? `?${queryString}` : ""}`
       );
+
+      const response = await axios.get(url, {
+        headers,
+        withCredentials: true,
+      });
 
       if (response.data.success) {
         // Transform the data to unified format
-        const transformedSubmissions = response.data.submissions.map(submission => ({
-          id: submission.submissionType === 'PAPER' ? submission.paper_id : submission.proposal_id,
-          title: submission.title,
-          team: submission.team?.team_name || "Unknown Team",
-          teacher: submission.teacher?.user?.name || "Unknown Teacher",
-          created_at: submission.created_at,
-          status: submission.status,
-          type: submission.submissionType.toLowerCase(), // 'paper' or 'proposal'
-          download_url: submission.pdf_path ? `${BASE}/${submission.pdf_path}` : null,
-          hasReview: submission.review && submission.review.length > 0,
-          reviewerAssigned: submission.reviewerassignment && submission.reviewerassignment.length > 0
-        })).slice(0, limit);
+        const transformedSubmissions = response.data.submissions
+          .map((submission) => ({
+            id:
+              submission.submissionType === "PAPER"
+                ? submission.paper_id
+                : submission.proposal_id,
+            title: submission.title,
+            team: submission.team?.team_name || "Unknown Team",
+            teacher: submission.teacher?.user?.name || "Unknown Teacher",
+            created_at: submission.created_at,
+            status: submission.status,
+            type: submission.submissionType.toLowerCase(), // 'paper' or 'proposal'
+            download_url: submission.pdf_path
+              ? resolveBackendUrl(submission.pdf_path)
+              : null,
+            hasReview: submission.review && submission.review.length > 0,
+            reviewerAssigned:
+              submission.reviewerassignment &&
+              submission.reviewerassignment.length > 0,
+          }))
+          .slice(0, limit);
 
         setSubmissions(transformedSubmissions);
       }
@@ -69,9 +83,9 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
   }, []);
 
   const handleFilterChange = (filterKey, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [filterKey]: value
+      [filterKey]: value,
     }));
   };
 
@@ -81,10 +95,10 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
 
   const resetFilters = () => {
     const emptyFilters = {
-      type: '',
-      startDate: '',
-      endDate: '',
-      teamId: ''
+      type: "",
+      startDate: "",
+      endDate: "",
+      teamId: "",
     };
     setFilters(emptyFilters);
     fetchSubmissions(emptyFilters);
@@ -162,7 +176,7 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
     return (
       <div className="bg-white rounded-lg p-6 shadow-md">
         <p className="text-red-600">Error: {error}</p>
-        <button 
+        <button
           onClick={() => fetchSubmissions(filters)}
           className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
@@ -192,39 +206,39 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <select
               value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              onChange={(e) => handleFilterChange("type", e.target.value)}
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Types</option>
               <option value="PAPER">Papers Only</option>
               <option value="PROPOSAL">Proposals Only</option>
             </select>
-            
+
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              onChange={(e) => handleFilterChange("startDate", e.target.value)}
               placeholder="Start Date"
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            
+
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
               placeholder="End Date"
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            
+
             <input
               type="number"
               value={filters.teamId}
-              onChange={(e) => handleFilterChange('teamId', e.target.value)}
+              onChange={(e) => handleFilterChange("teamId", e.target.value)}
               placeholder="Team ID"
               className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={applyFilters}
@@ -252,7 +266,7 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
           {submissions.map((submission) => {
             const displayStatus = toDisplayStatus(submission.status);
             const timeAgo = getTimeAgo(submission.created_at);
-            
+
             return (
               <div
                 key={`${submission.type}-${submission.id}`}
@@ -265,21 +279,24 @@ const AdminRecentSubmission = ({ limit = 10 }) => {
                         ? `${submission.title.slice(0, 50)}...`
                         : submission.title}
                     </p>
-                    
+
                     <div className="text-sm text-gray-600 space-y-1">
                       <p>
-                        <span className="capitalize font-medium">{submission.type}</span> • 
-                        Team: {submission.team} • 
+                        <span className="capitalize font-medium">{submission.type}</span> • Team: {submission.team} •
                         Teacher: {submission.teacher}
                       </p>
                       <p>
                         Submitted: {timeAgo}
-                        {submission.reviewerAssigned && <span className=" ml-2 text-blue-600">• Reviewer Assigned</span>}
-                        {submission.hasReview && <span className=" ml-2 text-green-600">• Reviewed</span>}
+                        {submission.reviewerAssigned && (
+                          <span className=" ml-2 text-blue-600">• Reviewer Assigned</span>
+                        )}
+                        {submission.hasReview && (
+                          <span className=" ml-2 text-green-600">• Reviewed</span>
+                        )}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3 ml-4">
                     <span
                       className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusClass(displayStatus)}`}

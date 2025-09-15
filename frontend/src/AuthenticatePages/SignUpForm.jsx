@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { resolveApiUrl } from "../config/api";
 
 export default function SignUpForm() {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ export default function SignUpForm() {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/api/auth/register", formData);
+      const response = await axios.post(resolveApiUrl("/auth/register"), formData);
       
       // With the new system, successful registration always redirects to verify page
       // since user must verify email before account creation

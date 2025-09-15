@@ -1,6 +1,7 @@
 // Pages/ReviewerDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 import {
   FaClipboard,
   FaCheckCircle,
@@ -10,8 +11,7 @@ import {
 import AssignedPapersTable from "../../components/Reviewer/AssignedPapersTable";
 import StatCard from "../../components/Common/StatCard";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = resolveApiUrl();
 
 export default function ReviewerDashboard() {
   const [stats, setStats] = useState({

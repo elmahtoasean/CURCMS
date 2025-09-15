@@ -7,9 +7,7 @@ import ReviewTable from "../../components/Common/ReviewTable";
 import PdfViewerModal from "../../components/Common/PdfViewerModal"; 
 import { FaCheckCircle, FaClock, FaUpload, FaClipboard } from "react-icons/fa";
 import axios from "axios";
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const ReviewHistoryPage = () => {
   const [filters, setFilters] = useState({
@@ -58,7 +56,7 @@ const ReviewHistoryPage = () => {
         });
 
         const { data } = await axios.get(
-          `${API_BASE_URL}/reviewer/review-history?${queryParams.toString()}`,
+          resolveApiUrl(`/reviewer/review-history?${queryParams.toString()}`),
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
 
@@ -89,7 +87,7 @@ const ReviewHistoryPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/reviewer/stats/me`, {
+        const { data } = await axios.get(resolveApiUrl("/reviewer/stats/me"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
@@ -114,10 +112,8 @@ const ReviewHistoryPage = () => {
   };
 
   const handleViewPdf = (row) => {
-    const fullPdfUrl = row.pdf_path?.startsWith("http")
-      ? row.pdf_path
-      : row.pdf_path
-      ? `${API_BASE}${row.pdf_path?.startsWith("/") ? row.pdf_path : "/" + row.pdf_path}`
+    const fullPdfUrl = row.pdf_path
+      ? resolveBackendUrl(row.pdf_path)
       : `/public/documents/${row.proposalId || row.id}`;
 
     setPdfUrl(fullPdfUrl); 

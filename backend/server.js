@@ -19,13 +19,54 @@ app.use(express.json()); // api to json
 app.use(express.urlencoded({ extended: false })); // html form response to json
 
 
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,   //Only requests coming from https://news.com are allowed to access your backend API
-  optionsSuccessStatus: 200
-})); 
+const defaultCorsOrigins = new Set([
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+const envOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_ORIGIN,
+  process.env.CORS_ALLOWED_ORIGINS,
+]
+  .filter(Boolean)
+  .flatMap((value) =>
+    value
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0)
+  );
+
+envOrigins.forEach((origin) => defaultCorsOrigins.add(origin));
+
+const corsAllowedOrigins = Array.from(defaultCorsOrigins);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      // Allow non-browser or same-origin requests
+      return callback(null, true);
+    }
+
+    if (corsAllowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 //app.use(cors()); // Allows or restricts access to your backend from different origins (frontends/apps)
 
 app.use(helmet({

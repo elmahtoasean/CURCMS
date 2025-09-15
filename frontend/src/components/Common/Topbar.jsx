@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-
-const API_BASE = "http://localhost:8000";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const Topbar = ({ onMenuClick, onLogout }) => {
   const navigate = useNavigate();
@@ -17,16 +16,7 @@ const Topbar = ({ onMenuClick, onLogout }) => {
   // Build a safe, absolute URL and add ?t= cache-buster
   const withTs = (url) => {
     if (!url) return null;
-    let full = url;
-
-    // If BE returned a relative path like "images/xxx.png" or "/images/xxx.png"
-    if (url.startsWith("/images/") || url.startsWith("images/")) {
-      const path = url.startsWith("/") ? url : `/${url}`;
-      full = `${API_BASE}${path}`;
-    }
-
-    // If BE already returned full http://localhost:8000/images/...
-    // we keep it as is and just add the timestamp.
+    const full = resolveBackendUrl(url);
     const sep = full.includes("?") ? "&" : "?";
     return `${full}${sep}t=${Date.now()}`;
   };
@@ -37,7 +27,7 @@ const Topbar = ({ onMenuClick, onLogout }) => {
       try {
         const ts = Date.now(); // also bust cache on the profile response
         const { data } = await axios.get(
-          `${API_BASE}/api/user/profile/${userId}?t=${ts}`,
+          resolveApiUrl(`/user/profile/${userId}?t=${ts}`),
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

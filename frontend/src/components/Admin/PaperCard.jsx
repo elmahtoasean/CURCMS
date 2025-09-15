@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Eye, Bot, PlusCircle } from "lucide-react";
 import PdfViewerModal from "../Common/PdfViewerModal";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+import { resolveBackendUrl } from "../../config/api";
 
 const PaperCard = ({
   id,
@@ -18,9 +17,7 @@ const PaperCard = ({
 }) => {
   const [openPdf, setOpenPdf] = useState(false);
 
-  const pdfUrl = pdf_path?.startsWith("http")
-    ? pdf_path
-    : `${API_BASE}${pdf_path?.startsWith("/") ? pdf_path : "/" + pdf_path}`;
+  const pdfUrl = pdf_path ? resolveBackendUrl(pdf_path) : null;
 
   const handleViewPdf = () => {
     if (pdf_path) setOpenPdf(true);

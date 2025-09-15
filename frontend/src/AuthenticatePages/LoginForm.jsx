@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { resolveApiUrl } from "../config/api";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -33,7 +34,7 @@ export default function LoginForm() {
     setErrorMsg("");
 
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/login", {
+      const res = await axios.post(resolveApiUrl("/auth/login"), {
         email,
         password,
       });

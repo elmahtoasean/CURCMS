@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { FaFilePdf, FaCheckCircle } from "react-icons/fa";
 import UploadDocModal from "../CreateTeam/UploadModal";
 import axios from "axios";
+import { resolveApiUrl } from "../../../config/api";
 
 const PaperUploader = ({ teamId, onUploadSuccess }) => {
   const [modalKind, setModalKind] = useState(null); // 'paper' | 'proposal'
@@ -22,9 +23,9 @@ const PaperUploader = ({ teamId, onUploadSuccess }) => {
         formData.append("proposal", file);
       }
 
-      const endpoint = kind === "paper" 
-        ? "http://localhost:8000/api/papers/upload"
-        : "http://localhost:8000/api/proposals/upload";
+      const endpoint = resolveApiUrl(
+        kind === "paper" ? "/papers/upload" : "/proposals/upload"
+      );
 
       const response = await axios.post(endpoint, formData, {
         headers: {

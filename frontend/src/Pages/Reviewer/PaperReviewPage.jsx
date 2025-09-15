@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 import {
   ArrowLeft,
   Download,
@@ -16,9 +17,6 @@ import {
   AlertCircle,
   XCircle,
 } from "lucide-react";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const USE_CODE_ENDPOINT = true;
 
@@ -69,13 +67,11 @@ const PaperReviewPage = () => {
 
   const buildEndpoint = (suffix = "") => {
     if (USE_CODE_ENDPOINT) {
-      return `${API_BASE_URL}/reviewer/review/${normalizedCode}${suffix}`;
+      return resolveApiUrl(`/reviewer/review/${normalizedCode}${suffix}`);
     }
-    // fallback style (not recommended with your current backend)
-    // fallback style (not recommended)
-    return `${API_BASE_URL}/reviewer/${
-      isProposalPath ? "proposal" : "paper"
-    }/${paperId}${suffix}`;
+    return resolveApiUrl(
+      `/reviewer/${isProposalPath ? "proposal" : "paper"}/${paperId}${suffix}`
+    );
   };
 
   const authHeader = useMemo(

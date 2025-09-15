@@ -5,6 +5,7 @@ import { Users, CheckCircle, Clock, UserPlus } from "lucide-react";
 import CommonButton from "../../components/Common/CommonButton";
 import AddReviewerModal from "../../components/Admin/AddReviewerModal";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 const ReviewerCommittee = () => {
   const [showModal, setShowModal] = useState(false);
@@ -20,7 +21,6 @@ const ReviewerCommittee = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
   const authHeaders = { Authorization: `Bearer ${localStorage.getItem("token")}` };
 
   useEffect(() => {
@@ -35,7 +35,7 @@ const ReviewerCommittee = () => {
 
   const fetchReviewers = async () => {
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/reviewers`, { headers: authHeaders });
+      const { data } = await axios.get(resolveApiUrl("/reviewers"), { headers: authHeaders });
       if (data?.reviewers) setReviewers(data.reviewers);
       if (data?.stats) setStats(data.stats);
     } catch (err) {
@@ -46,7 +46,7 @@ const ReviewerCommittee = () => {
 
   const fetchPotentialReviewers = async () => {
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/reviewers/potential`, { headers: authHeaders });
+      const { data } = await axios.get(resolveApiUrl("/reviewers/potential"), { headers: authHeaders });
       setPotentialReviewers(data || []);
     } catch (err) {
       console.error("Error fetching potential reviewers:", err);
@@ -60,7 +60,7 @@ const ReviewerCommittee = () => {
     try {
       setError("");
       const payload = { reviewer_ids: selectedTeacherIds, custom_message: customMessage };
-      await axios.post(`${API_BASE_URL}/reviewers/invite`, payload, {
+      await axios.post(resolveApiUrl("/reviewers/invite"), payload, {
         headers: { ...authHeaders, "Content-Type": "application/json" },
       });
       alert(`Invitations sent to ${selectedTeacherIds.length} teacher(s).`);
@@ -83,7 +83,7 @@ const ReviewerCommittee = () => {
   const handleSendMail = async (teacherId) => {
     try {
       await axios.post(
-        `${API_BASE_URL}/reviewers/invite`,
+        resolveApiUrl("/reviewers/invite"),
         { reviewer_ids: [teacherId] },
         { headers: authHeaders }
       );
@@ -97,7 +97,7 @@ const ReviewerCommittee = () => {
   const handleUpdateReviewerStatus = async (reviewerId, status) => {
     try {
       await axios.put(
-        `${API_BASE_URL}/reviewers/${reviewerId}`,
+        resolveApiUrl(`/reviewers/${reviewerId}`),
         { status },
         { headers: { ...authHeaders, "Content-Type": "application/json" } }
       );
@@ -111,7 +111,7 @@ const ReviewerCommittee = () => {
   const handleDeleteReviewer = async (reviewerId) => {
     if (!window.confirm("Are you sure you want to delete this reviewer?")) return;
     try {
-      await axios.delete(`${API_BASE_URL}/reviewers/${reviewerId}`, { headers: authHeaders });
+      await axios.delete(resolveApiUrl(`/reviewers/${reviewerId}`), { headers: authHeaders });
       alert("Reviewer deleted successfully!");
       fetchReviewers();
     } catch (err) {

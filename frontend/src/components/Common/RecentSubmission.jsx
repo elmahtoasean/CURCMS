@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaRegEye } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const RecentSubmission = ({ scope = "teacher", limit = 3 }) => {
   const [items, setItems] = useState([]); // unified papers+proposals
@@ -8,21 +9,18 @@ const RecentSubmission = ({ scope = "teacher", limit = 3 }) => {
   const [error, setError] = useState(null);
   const didFetch = useRef(false);
 
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-  const FILE_BASE = import.meta.env.VITE_FILE_BASE || "http://localhost:8000";
-
   const token = localStorage.getItem("token");
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
   const endpoints =
     scope === "student"
       ? {
-          papers: `${API_BASE}/student/my-teams/papers`,
-          proposals: `${API_BASE}/student/my-teams/proposals`,
+          papers: resolveApiUrl("/student/my-teams/papers"),
+          proposals: resolveApiUrl("/student/my-teams/proposals"),
         }
       : {
-          papers: `${API_BASE}/teacher/my-teams/papers`,
-          proposals: `${API_BASE}/teacher/my-teams/proposals`,
+          papers: resolveApiUrl("/teacher/my-teams/papers"),
+          proposals: resolveApiUrl("/teacher/my-teams/proposals"),
         };
 
   useEffect(() => {
@@ -50,7 +48,11 @@ const RecentSubmission = ({ scope = "teacher", limit = 3 }) => {
             aggregated_decided_at: x.aggregated_decided_at || null,
             type, // 'paper' | 'proposal'
             download_url:
-              x.download_url || (x.pdf_path ? `${FILE_BASE}/${x.pdf_path}` : null),
+              x.download_url
+                ? resolveBackendUrl(x.download_url)
+                : x.pdf_path
+                ? resolveBackendUrl(x.pdf_path)
+                : null,
           }));
 
         const unified = [

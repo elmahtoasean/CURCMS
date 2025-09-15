@@ -3,6 +3,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 import BasicInfoForm from "../../components/Teacher/CreateTeam/BasicInfoForm";
 import MemberManager from "../../components/Teacher/CreateTeam/MemberManager";
@@ -46,7 +47,7 @@ const CreateTeam = () => {
     if (!token) return;
 
     axios
-      .get("http://localhost:8000/api/me/context", {
+      .get(resolveApiUrl("/me/context"), {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -132,7 +133,7 @@ const CreateTeam = () => {
       }
       console.log("Final payload to backend:", [...formData.entries()]);
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:8000/api/teams", formData, {
+      await axios.post(resolveApiUrl("/teams"), formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,

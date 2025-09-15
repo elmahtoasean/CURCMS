@@ -6,6 +6,7 @@ import DocumentList from "../../components/Teacher/TeamManagement/DocumentList";
 import Comments from "../../components/Teacher/TeamManagement/Comment";
 import TeamCard from "../../components/Common/TeamCard";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const StudentTeamDetails = () => {
   const { id } = useParams();
@@ -22,7 +23,7 @@ const StudentTeamDetails = () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await axios.get(`http://localhost:8000/api/student/teams/${id}`, {
+        const res = await axios.get(resolveApiUrl(`/student/teams/${id}`), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setTeam(res.data.data);
@@ -43,8 +44,8 @@ const StudentTeamDetails = () => {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [proposalsRes, papersRes] = await Promise.all([
-          axios.get(`http://localhost:8000/api/teams/${id}/proposals`, { headers }),
-          axios.get(`http://localhost:8000/api/teams/${id}/papers`, { headers }),
+          axios.get(resolveApiUrl(`/teams/${id}/proposals`), { headers }),
+          axios.get(resolveApiUrl(`/teams/${id}/papers`), { headers }),
         ]);
 
         const docs = [
@@ -55,7 +56,7 @@ const StudentTeamDetails = () => {
             createdAtRaw: p.created_at,
             uploadedAt: new Date(p.created_at).toLocaleDateString("en-GB"),
             sizeBytes: p.file_size || 0,
-            href: p.pdf_path,
+            href: resolveBackendUrl(p.pdf_path),
             status: p.status,
           })),
           ...papersRes.data.data.map((p) => ({
@@ -65,7 +66,7 @@ const StudentTeamDetails = () => {
             createdAtRaw: p.created_at,
             uploadedAt: new Date(p.created_at).toLocaleDateString("en-GB"),
             sizeBytes: p.file_size || 0,
-            href: p.pdf_path,
+            href: resolveBackendUrl(p.pdf_path),
             status: p.status,
           })),
         ];

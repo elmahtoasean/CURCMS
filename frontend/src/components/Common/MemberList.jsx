@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { FaUserPlus, FaUserCircle, FaEnvelope, FaTags, FaIdBadge } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 /** TeamRole: LEAD | RESEARCHER | ASSISTANT */
 const roleToBadgeClasses = (role) => {
@@ -74,13 +75,13 @@ const MemberList = ({ members = [], teamId, canManage = false, onMemberAdded, ti
       const token = localStorage.getItem("token");
 
       // Get creator context to query candidates
-      const ctx = await axios.get("http://localhost:8000/api/me/context", {
+      const ctx = await axios.get(resolveApiUrl("/me/context"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const { department_id, domains } = ctx.data || {};
       const domainIds = Array.isArray(domains) ? domains.map((d) => d.domain_id) : [];
 
-      const res = await axios.get("http://localhost:8000/api/members", {
+      const res = await axios.get(resolveApiUrl("/members"), {
         params: { departmentId: department_id, domainIds: domainIds.join(",") },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -119,7 +120,7 @@ const MemberList = ({ members = [], teamId, canManage = false, onMemberAdded, ti
       }));
 
       await axios.post(
-        `http://localhost:8000/api/teacher/teams/${teamId}/add-members`,
+        resolveApiUrl(`/teacher/teams/${teamId}/add-members`),
         { members: payload },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -7,6 +7,7 @@ import AdminRecentSubmission from "../../components/Admin/AdminRecentSubmissions
 import SubmissionTrendsChart from "../../components/Admin/SubmissionTrends";
 import StatusDistributionChart from "../../components/Admin/StatusDistributionChart";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 const AdminHome = () => {
   const [stats, setStats] = useState([
@@ -38,7 +39,6 @@ const AdminHome = () => {
   // 🆕 reviewer workload state
   const [reviewers, setReviewers] = useState([]);
 
-  const BASE_URL = "http://localhost:8000/api";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -52,7 +52,7 @@ const AdminHome = () => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(`${BASE_URL}/admin/stats`, {
+      const response = await axios.get(resolveApiUrl("/admin/stats"), {
         headers,
         withCredentials: true,
       });
@@ -101,7 +101,7 @@ const AdminHome = () => {
   // 🆕 fetch reviewer workload
   const fetchReviewerWorkload = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/admin/reviewer-workload`, {
+      const response = await axios.get(resolveApiUrl("/admin/reviewer-workload"), {
         headers,
         withCredentials: true,
       });

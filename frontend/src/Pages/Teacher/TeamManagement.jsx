@@ -9,8 +9,9 @@ import {
 import StatCard from "../../components/Common/StatCard";
 import TeamCard from "../../components/Common/TeamCard";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE = resolveApiUrl();
 
 const TeamManagement = () => {
   const navigate = useNavigate();

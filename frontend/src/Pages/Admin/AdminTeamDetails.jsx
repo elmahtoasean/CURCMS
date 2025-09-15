@@ -5,6 +5,7 @@ import TeamDescriptionCard from "../../components/Admin/TeamDescriptionCard";
 import TeamMembersCard from "../../components/Admin/TeamMembersCard";
 import TeamPapersCard from "../../components/Admin/TeamsPapersCard";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 const AdminTeamDetails = () => {
   const { id } = useParams();
@@ -14,7 +15,6 @@ const AdminTeamDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const BASE_URL = "http://localhost:8000/api";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -27,7 +27,7 @@ const AdminTeamDetails = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${BASE_URL}/admin/teams/${id}`, {
+      const response = await axios.get(resolveApiUrl(`/admin/teams/${id}`), {
         headers,
         withCredentials: true
       });

@@ -6,9 +6,7 @@ import CommonSubmissionTable from "../../components/Common/CommonSubmissionTable
 import FilterBar from "../../components/Common/FilterBar";
 import CommonButton from "../../components/Common/CommonButton";
 import axios from "axios";
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -72,7 +70,7 @@ export default function AssignedProposalsPage() {
       if (status) params.append("status", status);
 
       const { data } = await axios.get(
-        `${API_BASE_URL}/reviewer/assigned-proposals?${params.toString()}`,
+        resolveApiUrl(`/reviewer/assigned-proposals?${params.toString()}`),
         {
           headers: getAuthHeaders(),
         }
@@ -108,7 +106,7 @@ export default function AssignedProposalsPage() {
       )
         return;
       await axios.patch(
-        `${API_BASE_URL}/reviewer/assignments/${assignmentId}/status`,
+        resolveApiUrl(`/reviewer/assignments/${assignmentId}/status`),
         { status },
         { headers: getAuthHeaders() }
       );
@@ -233,14 +231,8 @@ export default function AssignedProposalsPage() {
           <div className="flex">
             <button
               onClick={() => {
-                const fullPdfUrl = row.pdf_path?.startsWith("http")
-                  ? row.pdf_path
-                  : row.pdf_path
-                  ? `${API_BASE}${
-                      row.pdf_path?.startsWith("/")
-                        ? row.pdf_path
-                        : "/" + row.pdf_path
-                    }`
+                const fullPdfUrl = row.pdf_path
+                  ? resolveBackendUrl(row.pdf_path)
                   : `/public/documents/${row.proposalId || row.id}`;
                 window.open(fullPdfUrl, "_blank");
               }}

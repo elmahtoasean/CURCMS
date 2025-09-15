@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { FaUserPlus, FaUserCircle, FaEnvelope, FaTags } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl } from "../../../config/api";
 
 const MemberList = ({
   onAddMany,
@@ -28,7 +29,7 @@ const MemberList = ({
     }
 
     axios
-      .get("http://localhost:8000/api/members", {
+      .get(resolveApiUrl("/members"), {
         params,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })

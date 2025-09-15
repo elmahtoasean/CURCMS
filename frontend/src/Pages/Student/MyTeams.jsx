@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 import {
   FaClipboard,
   FaCheckCircle,
@@ -29,7 +30,7 @@ const MyTeams = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get("http://localhost:8000/api/student/my-teams", {
+        const response = await axios.get(resolveApiUrl("/student/my-teams"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         console.log("Teams fetched:", response.data.data);

@@ -4,8 +4,7 @@ import CommonSubmissionTable from "../../components/Common/CommonSubmissionTable
 import FilterBar from "../../components/Common/FilterBar";
 import axios from "axios";
 import PdfViewerModal from "../../components/Common/PdfViewerModal";
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
+import { resolveApiUrl } from "../../config/api";
 
 function AdminPapers() {
   const [filters, setFilters] = useState({
@@ -28,7 +27,7 @@ function AdminPapers() {
   useEffect(() => {
     const fetchPapers = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/admin/papers`, {
+        const { data } = await axios.get(resolveApiUrl("/admin/papers"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setSubmissions(data?.papers || []);
@@ -46,7 +45,7 @@ function AdminPapers() {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/admin/departments`, {
+        const { data } = await axios.get(resolveApiUrl("/admin/departments"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         // Expecting data like: { success: true, departments: [{department_id, department_name}] }

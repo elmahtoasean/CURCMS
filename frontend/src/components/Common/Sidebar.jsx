@@ -3,8 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { FaTimes, FaBookOpen } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
-
-const API_BASE = "http://localhost:8000";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const roleLabel = (profile) => {
   const r = profile?.role;
@@ -19,11 +18,7 @@ const roleLabel = (profile) => {
 
 const withTs = (url) => {
   if (!url) return null;
-  let full = url;
-  if (url.startsWith("/images/") || url.startsWith("images/")) {
-    const path = url.startsWith("/") ? url : `/${url}`;
-    full = `${API_BASE}${path}`;
-  }
+  const full = resolveBackendUrl(url);
   const sep = full.includes("?") ? "&" : "?";
   return `${full}${sep}t=${Date.now()}`;
 };
@@ -46,7 +41,7 @@ const Sidebar = ({ role = "teacher", isOpen, onClose, children }) => {
       try {
         const ts = Date.now();
         const { data } = await axios.get(
-          `${API_BASE}/api/user/profile/${userId}?t=${ts}`,
+          resolveApiUrl(`/user/profile/${userId}?t=${ts}`),
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const p = data?.profile || {};

@@ -2,6 +2,7 @@ import { useContext, useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
+import { resolveApiUrl } from "../../config/api";
 import AdditionalPreferences from "../../components/Preference/AdditionalPreferences";
 import Department from "../../components/Preference/Department";
 import ResearchFields from "../../components/Preference/ResearchFields";
@@ -33,7 +34,7 @@ function PreferencePage() {
   const fetchProfileData = async () => {
     try {
       const { data } = await axios.get(
-        `http://localhost:8000/api/user/profile/${resolvedUserId}`,
+        resolveApiUrl(`/user/profile/${resolvedUserId}`),
         authHeaders
       );
       if (data.success) setProfileData(data.profile);
@@ -47,9 +48,11 @@ function PreferencePage() {
     try {
       setPreferencesLoading(true);
       const [deptRes, domainsRes, prefsRes] = await Promise.all([
-        axios.get("http://localhost:8000/api/departments", authHeaders),
-        axios.get("http://localhost:8000/api/domains", authHeaders),
-        axios.get(`http://localhost:8000/api/user/preferences/${resolvedUserId}`, authHeaders).catch(() => ({ data: { preferences: {} } })),
+        axios.get(resolveApiUrl("/departments"), authHeaders),
+        axios.get(resolveApiUrl("/domains"), authHeaders),
+        axios
+          .get(resolveApiUrl(`/user/preferences/${resolvedUserId}`), authHeaders)
+          .catch(() => ({ data: { preferences: {} } })),
       ]);
 
       setDepartments(deptRes.data.departments || []);
@@ -97,7 +100,7 @@ function PreferencePage() {
     if (!departmentId) { setAvailableDomains(allDomains); return; }
     try {
       const res = await axios.get(
-        `http://localhost:8000/api/department/${departmentId}/domains`,
+        resolveApiUrl(`/department/${departmentId}/domains`),
         authHeaders
       );
       setAvailableDomains(res.data.domains || []);
@@ -149,7 +152,7 @@ function PreferencePage() {
       console.log("Saving preferences (full payload):", payload);
 
       const { data } = await axios.put(
-        `http://localhost:8000/api/user/preferences/${resolvedUserId}`,
+        resolveApiUrl(`/user/preferences/${resolvedUserId}`),
         payload,
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
       );

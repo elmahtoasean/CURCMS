@@ -3,6 +3,7 @@ import PaperCard from "../../components/Common/PaperCard";
 import UploadDocModal from "../../components/Teacher/CreateTeam/UploadModal";
 import FilterBar from "../../components/Common/FilterBar";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 const MyPapers = () => {
   // filters
@@ -86,7 +87,7 @@ const MyPapers = () => {
         setError(null);
 
         const res = await axios.get(
-          "http://localhost:8000/api/teacher/my-teams/papers",
+          resolveApiUrl("/teacher/my-teams/papers"),
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -117,7 +118,7 @@ const MyPapers = () => {
             role: "Contributor",
             reviewers: [],
             comments: 0,
-            fileUrl: p.download_url,
+            fileUrl: p.download_url ? resolveBackendUrl(p.download_url) : null,
           };
         });
 

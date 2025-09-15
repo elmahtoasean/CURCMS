@@ -6,9 +6,7 @@ import CommonSubmissionTable from "../../components/Common/CommonSubmissionTable
 import FilterBar from "../../components/Common/FilterBar";
 import CommonButton from "../../components/Common/CommonButton";
 import axios from "axios";
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -79,7 +77,7 @@ export default function AssignedPapersPage() {
       if (status) params.append("status", status);
 
       const { data } = await axios.get(
-        `${API_BASE_URL}/reviewer/assigned-papers?${params.toString()}`,
+        resolveApiUrl(`/reviewer/assigned-papers?${params.toString()}`),
         {
           headers: getAuthHeaders(),
         }
@@ -120,7 +118,7 @@ export default function AssignedPapersPage() {
       )
         return;
       await axios.patch(
-        `${API_BASE_URL}/reviewer/assignments/${assignmentId}/status`,
+        resolveApiUrl(`/reviewer/assignments/${assignmentId}/status`),
         { status },
         { headers: getAuthHeaders() }
       );
@@ -137,9 +135,7 @@ export default function AssignedPapersPage() {
     console.log("Opening PDF with URL:", pdf_path);
     if (pdf_path) {
       // Use the same URL construction logic as PaperCard
-      const fullPdfUrl = pdf_path?.startsWith("http")
-        ? pdf_path
-        : `${API_BASE}${pdf_path?.startsWith("/") ? pdf_path : "/" + pdf_path}`;
+      const fullPdfUrl = resolveBackendUrl(pdf_path);
 
       setPdfUrl(fullPdfUrl);
       setTitle(paperTitle || "PDF Document");

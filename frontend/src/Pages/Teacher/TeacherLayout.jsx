@@ -4,6 +4,7 @@ import Sidebar from "../../components/Common/Sidebar";
 import Topbar from "../../components/Common/Topbar";
 import LogoutModal from "../../components/Common/LogoutModal";
 import { AuthContext } from "../../context/AuthContext";
+import { resolveApiUrl } from "../../config/api";
 import {
   FaFileAlt,
   FaUsers,
@@ -40,8 +41,7 @@ const TeacherLayout = () => {
   const switchToReviewer = async () => {
     try {
       const token = localStorage.getItem("token");
-      const backendBaseUrl = "http://localhost:8000";
-      const response = await fetch(`${backendBaseUrl}/api/auth/switch-role`, {
+      const response = await fetch(resolveApiUrl("/auth/switch-role"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

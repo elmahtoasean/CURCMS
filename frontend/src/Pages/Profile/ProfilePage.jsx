@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
+import { resolveApiUrl } from "../../config/api";
 import EditButton from "../../components/Profile/EditButton";
 import PersonalInfo from "../../components/Profile/PersonalInfo";
 import ProfileHeader from "../../components/Profile/ProfileHeader";
@@ -25,7 +26,7 @@ const ProfilePage = () => {
       // Add cache busting to the profile request
       const timestamp = Date.now();
       const response = await axios.get(
-        `http://localhost:8000/api/user/profile/${resolvedUserId}?t=${timestamp}`,
+        resolveApiUrl(`/user/profile/${resolvedUserId}?t=${timestamp}`),
         {
           headers: {
             Authorization: `Bearer ${token}`,

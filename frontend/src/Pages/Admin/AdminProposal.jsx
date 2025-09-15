@@ -5,8 +5,7 @@ import CommonSubmissionTable from "../../components/Common/CommonSubmissionTable
 import FilterBar from "../../components/Common/FilterBar";
 import axios from "axios";
 import PdfViewerModal from "../../components/Common/PdfViewerModal";
-
-const API_BASE_URL = import.meta.env.APP_URL || "http://localhost:8000/api";
+import { resolveApiUrl } from "../../config/api";
 
 function AdminProposals() {
   const [filters, setFilters] = useState({
@@ -29,7 +28,7 @@ function AdminProposals() {
   useEffect(() => {
     const fetchProposals = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/admin/proposals`, {
+        const { data } = await axios.get(resolveApiUrl("/admin/proposals"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setSubmissions(data?.proposals || []);
@@ -47,7 +46,7 @@ function AdminProposals() {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/admin/departments`, {
+        const { data } = await axios.get(resolveApiUrl("/admin/departments"), {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const opts = (data?.departments || [])

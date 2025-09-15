@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUsers, FaFileAlt, FaFileInvoice, FaStickyNote } from "react-icons/fa";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 
 const getInitials = (name) => name
   .split(" ")
@@ -120,7 +121,6 @@ const TeamsPage = () => {
   const [error, setError] = useState(null);
   const [showCount, setShowCount] = useState(6);
 
-  const BASE_URL = "http://localhost:8000/api";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -133,7 +133,7 @@ const TeamsPage = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${BASE_URL}/admin/teams`, {
+      const response = await axios.get(resolveApiUrl("/admin/teams"), {
         headers,
         withCredentials: true
       });

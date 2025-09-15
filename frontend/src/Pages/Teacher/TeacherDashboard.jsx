@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { resolveApiUrl } from "../../config/api";
 import {
   FaClipboard,
   FaCheckCircle,
@@ -10,7 +11,7 @@ import StatCard from "../../components/Common/StatCard"; // <-- capital S
 import TeamActivity from "../../components/Common/TeamActivity";
 import RecentSubmission from "../../components/Common/RecentSubmission";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = resolveApiUrl();
 
 /** Normalize status strings coming from DB/enums */
 const norm = (s) => (typeof s === "string" ? s.trim().toUpperCase() : "");

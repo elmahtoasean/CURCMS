@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
+import { BACKEND_ORIGIN, resolveApiUrl } from "../../config/api";
 
 const WaitingAssignment = () => {
   const [showModal, setShowModal] = useState(false);
@@ -35,10 +36,9 @@ const WaitingAssignment = () => {
   const fetchWaitingAssignments = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        "http://localhost:8000/api/assignments/waiting",
-        { headers: getAuthHeaders() }
-      );
+      const res = await axios.get(resolveApiUrl("/assignments/waiting"), {
+        headers: getAuthHeaders(),
+      });
 
       if (res.data) {
         const { waitingItems = [], stats: responseStats = {} } = res.data;
@@ -67,7 +67,9 @@ const WaitingAssignment = () => {
         else if (status === 404) setError("API endpoint not found. Please check server configuration.");
         else setError(`Server error (${status}): ${message}`);
       } else if (err.request) {
-        setError("Cannot connect to server. Please ensure the backend is running on http://localhost:8000");
+        setError(
+          `Cannot connect to server. Please ensure the backend is running on ${BACKEND_ORIGIN}`
+        );
       } else {
         setError(`Request failed: ${err.message}`);
       }
@@ -86,10 +88,10 @@ const WaitingAssignment = () => {
       if (itemType) params.item_type = itemType;
       if (itemId) params.item_id = itemId;
 
-      const res = await axios.get(
-        "http://localhost:8000/api/assignments/reviewers",
-        { headers: getAuthHeaders(), params }
-      );
+      const res = await axios.get(resolveApiUrl("/assignments/reviewers"), {
+        headers: getAuthHeaders(),
+        params,
+      });
 
       if (Array.isArray(res.data)) {
         setPotentialReviewers(res.data);
@@ -131,11 +133,9 @@ const WaitingAssignment = () => {
         ],
       };
 
-      const res = await axios.post(
-        "http://localhost:8000/api/assignments/assign",
-        payload,
-        { headers: getAuthHeaders() }
-      );
+      const res = await axios.post(resolveApiUrl("/assignments/assign"), payload, {
+        headers: getAuthHeaders(),
+      });
 
       const { success, results, message } = res.data || {};
       if (success) {
@@ -173,11 +173,9 @@ const WaitingAssignment = () => {
         item_type: paper.type === "paper" ? "paper" : "proposal",
       };
 
-      const res = await axios.post(
-        "http://localhost:8000/api/assignments/auto-match",
-        payload,
-        { headers: getAuthHeaders() }
-      );
+      const res = await axios.post(resolveApiUrl("/assignments/auto-match"), payload, {
+        headers: getAuthHeaders(),
+      });
 
       if (res.data) {
         if (res.data.recommendations) {

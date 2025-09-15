@@ -13,6 +13,7 @@ import Topbar from "../../components/Common/Topbar";
 import Sidebar from "../../components/Common/Sidebar";
 import LogoutModal from "../../components/Common/LogoutModal";
 import { AuthContext } from "./../../context/AuthContext";
+import { resolveApiUrl } from "../../config/api";
 // import AssignedPapersTable from "../../components/Reviewer/AssignedPapersTable";
 
 const ReviewerLayout = () => {
@@ -47,9 +48,7 @@ const ReviewerLayout = () => {
         navigate("/login");
         return;
       }
-      const backendBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${backendBaseUrl}/api/auth/switch-role`, {
+      const response = await fetch(resolveApiUrl("/auth/switch-role"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

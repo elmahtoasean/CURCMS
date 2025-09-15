@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import axios from 'axios'; // Add this import
+import { resolveApiUrl } from '../../config/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -12,7 +13,6 @@ const SubmissionTrendsChart = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const BASE_URL = "http://localhost:8000/api";
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -23,7 +23,7 @@ const SubmissionTrendsChart = () => {
   const fetchSubmissionTrends = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/admin/submission-trends`, {
+      const response = await axios.get(resolveApiUrl('/admin/submission-trends'), {
         headers,
         withCredentials: true
       });

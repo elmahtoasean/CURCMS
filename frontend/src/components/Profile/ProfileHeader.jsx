@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { resolveBackendUrl } from '../../config/api';
 
 const ProfileHeader = ({ name, role, department, avatarUrl }) => {
   const [imageUrl, setImageUrl] = useState(null);
@@ -7,16 +8,7 @@ const ProfileHeader = ({ name, role, department, avatarUrl }) => {
   useEffect(() => {
     if (avatarUrl) {
       // Clean the URL and add cache busting
-      let cleanUrl = avatarUrl;
-      
-      // If it's a full URL, use it as is
-      if (avatarUrl.startsWith('http://localhost:8000/')) {
-        cleanUrl = avatarUrl;
-      } else if (avatarUrl.startsWith('/images/') || avatarUrl.startsWith('images/')) {
-        // Convert relative paths to full URLs for proper CORS handling
-        const imagePath = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
-        cleanUrl = `http://localhost:8000${imagePath}`;
-      }
+      let cleanUrl = resolveBackendUrl(avatarUrl);
       
       // Add cache busting
       const timestamp = Date.now();

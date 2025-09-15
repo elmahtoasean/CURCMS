@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import FilterBar from "../../components/Common/FilterBar";
 import SubmissionTable from "../../components/Teacher/SubmissionTable";
-
-const API_BASE = "http://localhost:8000"; 
+import { resolveApiUrl } from "../../config/api";
 
 const parseSearchCode = (raw) => {
   if (!raw) return null;
@@ -27,7 +26,7 @@ export default function SubmissionHistory() {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/submissions/filters`, {
+        const res = await axios.get(resolveApiUrl("/submissions/filters"), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -127,7 +126,7 @@ export default function SubmissionHistory() {
         params.append("sort", sort.key);
         params.append("order", sort.dir);
 
-        const url = `${API_BASE}/api/submissions?${params.toString()}`;
+        const url = resolveApiUrl(`/submissions?${params.toString()}`);
 
         const res = await axios.get(url, {
           headers: {

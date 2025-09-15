@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 
 function AvatarPicker({ userId, token, currentUrl, onUpdated }) {
   const [preview, setPreview] = useState(null);
@@ -8,16 +9,7 @@ function AvatarPicker({ userId, token, currentUrl, onUpdated }) {
 
   useEffect(() => {
     if (currentUrl) {
-      let processedUrl = currentUrl;
-
-      if (currentUrl.startsWith("http://localhost:8000/")) {
-        // already absolute
-      } else if (currentUrl.startsWith("/images/") || currentUrl.startsWith("images/")) {
-        const imagePath = currentUrl.startsWith("/") ? currentUrl : `/${currentUrl}`;
-        processedUrl = `http://localhost:8000${imagePath}`;
-      } else {
-        processedUrl = `http://localhost:8000/images/${currentUrl}`;
-      }
+      const processedUrl = resolveBackendUrl(currentUrl);
 
       const t = Date.now();
       const sep = processedUrl.includes("?") ? "&" : "?";
@@ -60,7 +52,7 @@ function AvatarPicker({ userId, token, currentUrl, onUpdated }) {
       formData.append("avatar", file);
 
       const response = await axios.post(
-        `http://localhost:8000/api/user/avatar/${userId}`,
+        resolveApiUrl(`/user/avatar/${userId}`),
         formData,
         {
           headers: {
@@ -111,16 +103,7 @@ function AvatarPicker({ userId, token, currentUrl, onUpdated }) {
     setFile(null);
 
     if (currentUrl) {
-      let processedUrl = currentUrl;
-
-      if (currentUrl.startsWith("http://localhost:8000/")) {
-        processedUrl = currentUrl;
-      } else if (currentUrl.startsWith("/images/") || currentUrl.startsWith("images/")) {
-        const imagePath = currentUrl.startsWith("/") ? currentUrl : `/${currentUrl}`;
-        processedUrl = `http://localhost:8000${imagePath}`;
-      } else {
-        processedUrl = `http://localhost:8000/public/images/${currentUrl}`;
-      }
+      const processedUrl = resolveBackendUrl(currentUrl);
 
       const t = Date.now();
       const sep = processedUrl.includes("?") ? "&" : "?";

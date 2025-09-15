@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserCircle, FaPaperPlane, FaSpinner } from 'react-icons/fa';
 import axios from 'axios';
+import { resolveApiUrl } from '../../../config/api';
 
 const Comments = ({ teamId }) => {
   const [comment, setComment] = useState('');
@@ -20,7 +21,7 @@ const Comments = ({ teamId }) => {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:8000/api/profile", {
+      const response = await axios.get(resolveApiUrl("/profile"), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCurrentUser(response.data.data);
@@ -33,7 +34,7 @@ const Comments = ({ teamId }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:8000/api/teams/${teamId}/comments`, {
+      const response = await axios.get(resolveApiUrl(`/teams/${teamId}/comments`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComments(response.data.data || []);
@@ -52,7 +53,7 @@ const Comments = ({ teamId }) => {
       setPosting(true);
       const token = localStorage.getItem("token");
       
-      const response = await axios.post(`http://localhost:8000/api/teams/${teamId}/comments`, {
+      const response = await axios.post(resolveApiUrl(`/teams/${teamId}/comments`), {
         comment: comment.trim()
       }, {
         headers: { Authorization: `Bearer ${token}` }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { resolveApiUrl, resolveBackendUrl } from "../../config/api";
 import { FaArrowLeft, FaEdit, FaCog } from "react-icons/fa";
 import MemberList from "../../components/Common/MemberList";
 import PendingApplications from "../../components/Teacher/TeamManagement/PendingApplication";
@@ -35,7 +36,7 @@ const TeamDetails = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:8000/api/teacher/teams/${Number(id)}`,
+        resolveApiUrl(`/teacher/teams/${Number(id)}`),
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -57,10 +58,10 @@ const TeamDetails = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [proposalsRes, papersRes] = await Promise.all([
-        axios.get(`http://localhost:8000/api/teams/${id}/proposals`, {
+        axios.get(resolveApiUrl(`/teams/${id}/proposals`), {
           headers,
         }),
-        axios.get(`http://localhost:8000/api/teams/${id}/papers`, { headers }),
+        axios.get(resolveApiUrl(`/teams/${id}/papers`), { headers }),
       ]);
 
       const allDocs = [
@@ -72,7 +73,7 @@ const TeamDetails = () => {
           uploadedAt: new Date(p.created_at).toLocaleDateString(),
           uploadedBy: p.teacher?.user?.name || "Unknown",
           sizeBytes: p.file_size,
-          href: p.pdf_path,
+          href: resolveBackendUrl(p.pdf_path),
           status: p.status,
           abstract: p.abstract,
           // domain: p.team?.domain?.domain_name, // if you included team.domain in API
@@ -85,7 +86,7 @@ const TeamDetails = () => {
           uploadedAt: new Date(p.created_at).toLocaleDateString(),
           uploadedBy: p.teacher?.user?.name || "Unknown",
           sizeBytes: p.file_size,
-          href: p.pdf_path,
+          href: resolveBackendUrl(p.pdf_path),
           status: p.status,
           abstract: p.abstract,
           // domain: p.team?.domain?.domain_name,
@@ -112,7 +113,7 @@ const TeamDetails = () => {
   const handleDownload = (doc) => {
     if (!doc?.href) return;
     const link = document.createElement("a");
-    link.href = `http://localhost:8000/${doc.href}`;
+    link.href = resolveBackendUrl(doc.href);
     link.download = doc.name || "document.pdf";
     document.body.appendChild(link);
     link.click();
@@ -127,11 +128,11 @@ const TeamDetails = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       if (type === "proposal") {
-        await axios.delete(`http://localhost:8000/api/proposals/${docId}`, {
+        await axios.delete(resolveApiUrl(`/proposals/${docId}`), {
           headers,
         });
       } else {
-        await axios.delete(`http://localhost:8000/api/papers/${docId}`, {
+        await axios.delete(resolveApiUrl(`/papers/${docId}`), {
           headers,
         });
       }
@@ -149,7 +150,7 @@ const TeamDetails = () => {
       setUpdatingStatus(true);
       const token = localStorage.getItem("token");
       await axios.patch(
-        `http://localhost:8000/api/teacher/teams/${Number(id)}/status`,
+        resolveApiUrl(`/teacher/teams/${Number(id)}/status`),
         { status: next },
         { headers: { Authorization: `Bearer ${token}` } }
       );

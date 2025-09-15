@@ -1,96 +1,57 @@
-import { Queue, Worker } from "bullmq";
-import { defaultQueueConfig, redisConnection } from "../config/queue.js";
 import logger from "../config/logger.js";
 import { sendEmail } from "../config/mailer.js";
 
 export const emailQueueName = "email-queue";
-export const emailQueue = new Queue(emailQueueName, {
-  connection: redisConnection,
-  defaultJobOptions: {
-    ...defaultQueueConfig,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-});
 
-export const handler = new Worker(
-  emailQueueName,
-  async (job) => {
-    console.log("Processing email job:", job.id);
-    const data = job.data;
-    
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid job data format");
+function ensureArray(data) {
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid job data format");
+  }
+  return data;
+}
+
+export const emailQueue = {
+  async add(_queueName, data) {
+    const jobs = ensureArray(data);
+    if (jobs.length === 0) {
+      logger.warn("Email queue received an empty batch");
+      return [];
     }
 
     const results = [];
-    
-    for (const item of data) {
+
+    for (const item of jobs) {
+      const toEmail = item?.toEmail;
+      if (!toEmail) {
+        const error = new Error("Missing recipient email address");
+        logger.error("Email send failed due to missing recipient", { item });
+        results.push({ email: null, status: "failed", error: error.message });
+        continue;
+      }
+
       try {
-        console.log(`Sending email to: ${item.toEmail}`);
-        await sendEmail(item.toEmail, item.subject, item.body);
-        console.log(`Email sent successfully to: ${item.toEmail}`);
-        results.push({ email: item.toEmail, status: 'success' });
+        logger.info(`Sending email to: ${toEmail}`);
+        await sendEmail(toEmail, item.subject, item.body);
+        logger.info(`Email sent successfully to: ${toEmail}`);
+        results.push({ email: toEmail, status: "success" });
       } catch (error) {
-        console.error(`Failed to send email to ${item.toEmail}:`, error);
-        logger.error(`Email send failed for ${item.toEmail}:`, error);
-        results.push({ email: item.toEmail, status: 'failed', error: error.message });
-        // Continue with other emails even if one fails
+        logger.error(`Email send failed for ${toEmail}:`, error);
+        results.push({ email: toEmail, status: "failed", error: error.message });
       }
     }
-    
-    // If all emails failed, throw error to trigger retry
-    const successCount = results.filter(r => r.status === 'success').length;
+
+    const successCount = results.filter((r) => r.status === "success").length;
     if (successCount === 0) {
-      throw new Error('All email sends failed');
+      throw new Error("All email sends failed");
     }
-    
+
+    logger.info({
+      message: "Email batch processed",
+      queue: emailQueueName,
+      successCount,
+      failureCount: results.length - successCount,
+    });
+
     return results;
   },
-  {
-    connection: redisConnection,
-    concurrency: 5, // Process up to 5 email jobs simultaneously
-  }
-);
-
-// Enhanced error handling
-handler.on("completed", (job, result) => {
-  logger.info({
-    jobId: job.id,
-    result: result,
-    message: "Email job completed successfully",
-  });
-  console.log(`Email job ${job.id} completed successfully`);
-});
-
-handler.on("failed", (job, err) => {
-  logger.error({
-    jobId: job?.id,
-    error: err.message,
-    stack: err.stack,
-    data: job?.data,
-    message: "Email job failed",
-  });
-  console.error(`Email job ${job?.id} failed:`, err.message);
-});
-
-handler.on("error", (err) => {
-  console.error("Email worker error:", err);
-  logger.error("Email worker error:", err);
-});
-
-emailQueue.on("error", (err) => {
-  console.error("Email queue error:", err);
-  logger.error("Email queue error:", err);
-});
-
-// Add graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Shutting down email worker gracefully...');
-  await handler.close();
-  await emailQueue.close();
-  process.exit(0);
-});
+};

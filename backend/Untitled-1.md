@@ -6,13 +6,10 @@ Root path: `d:\WebDev\Project\URCMS\URC\backend`
 ```
 ├── DB/
 │   ├── db.config.js
-│   ├── redis.client.js
-│   └── redis.config.js
 ├── config/
 │   ├── filesystem.js
 │   ├── logger.js
 │   ├── mailer.js
-│   ├── queue.js
 │   └── ratelimiter.js
 ├── controllers/
 │   ├── admin/
@@ -156,7 +153,6 @@ Root path: `d:\WebDev\Project\URCMS\URC\backend`
 │   └── newApiTransform.js
 ├── utils/
 │   ├── assignmentAggregate.js
-│   ├── cacheKeys.js
 │   ├── decisionAggregate.js
 │   ├── finalizeIfCompleted.js
 │   └── helper.js

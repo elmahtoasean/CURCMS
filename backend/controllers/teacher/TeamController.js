@@ -1,11 +1,5 @@
 // controllers/TeamController.js
 import db from "../../DB/db.config.js";
-import redis from "../../DB/redis.client.js";
-import {
-  teamDetailsKey,
-  userTeamsKey,
-  membersKey,
-} from "../../utils/cacheKeys.js";
 import { Vine, errors } from "@vinejs/vine";
 import { fileValidator, uploadFile } from "../../utils/helper.js";
 import { teamSchema } from "../../validations/teacher/teamValidation.js";
@@ -224,22 +218,6 @@ class TeamController {
         });
       }
 
-      // Invalidate caches
-      try {
-        const creatorId = Number(req.user.id);
-        await redis.del(userTeamsKey(creatorId));
-
-        // Also invalidate each added member's "my teams"
-        if (Array.isArray(payload.members)) {
-          for (const m of payload.members) {
-            if (m?.user_id) await redis.del(userTeamsKey(Number(m.user_id)));
-          }
-        }
-        await redis.del(teamDetailsKey(team.team_id));
-      } catch (err) {
-        console.error("Redis invalidate error:", err);
-      }
-
       return res.status(201).json({
         status: 201,
         message: "Team created successfully",
@@ -405,20 +383,12 @@ class TeamController {
           .status(400)
           .json({ error: "creatorUserId must be a number" });
 
-      // Try cache first
-      const key = membersKey({ departmentId, creatorUserId, domainIds });
-      const cached = await redis.get(key);
-      if (cached)
-        return res.json({ data: JSON.parse(cached), fromCache: true });
-
       const members = await TeamController.getPotentialTeamMembers({
         departmentId,
         creatorUserId,
         domainIds,
       });
 
-      // Cache for 30 minutes (currently 60s – adjust if needed)
-      await redis.setex(key, 60, JSON.stringify(members)); // cache 60s
       return res.json({ data: members, fromCache: false });
     } catch (e) {
       const message =

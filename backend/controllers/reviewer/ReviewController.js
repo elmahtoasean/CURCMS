@@ -5,8 +5,6 @@ import prisma from "../../DB/db.config.js";
 import logger from "../../config/logger.js";
 import { Vine } from "@vinejs/vine";
 import { reviewSchema } from "../../validations/reviewer/reviewValidation.js";
-import redis from "../../DB/redis.client.js";
-import { teamDetailsKey } from "../../utils/cacheKeys.js";
 import { finalizeIfCompleted } from "../../utils/finalizeIfCompleted.js";
 import {
   fileValidator,
@@ -230,16 +228,6 @@ class ReviewController {
         isProposal ? "proposal" : "paper",
         id
       );
-
-      // ---- Invalidate team cache (team page reflects latest state) ----
-      try {
-        const parent = isProposal
-          ? await prisma.proposal.findUnique({ where: { proposal_id: id }, select: { team_id: true } })
-          : await prisma.paper.findUnique({ where: { paper_id: id }, select: { team_id: true } });
-        if (parent?.team_id) {
-          try { await redis.del(teamDetailsKey(parent.team_id)); } catch { }
-        }
-      } catch { }
 
       // ---- Respond ----
       return res.status(201).json({

@@ -138,14 +138,27 @@ export default function SignUpForm() {
         if (err.response.data?.errors?.email) {
           setMatchError(err.response.data.errors.email);
         } else if (err.response.data?.errors?.roll_number) {
-          setMatchError(Array.isArray(err.response.data.errors.roll_number) 
-            ? err.response.data.errors.roll_number[0] 
+          setMatchError(Array.isArray(err.response.data.errors.roll_number)
+            ? err.response.data.errors.roll_number[0]
             : err.response.data.errors.roll_number);
+        } else if (err.response.data?.wrongEmailDomain) {
+          navigate("/wrong-email", {
+            state: {
+              email: formData.email,
+              domain:
+                err.response.data?.disallowedDomain ||
+                formData.email.split("@")[1] ||
+                "",
+              message:
+                err.response.data?.message ||
+                "Please use your official university email address to register.",
+            },
+          });
         } else if (err.response.data?.emailSent === false) {
           // Email failed to send
-          navigate("/verify", { 
-            state: { 
-              status: "email_failed", 
+          navigate("/verify", {
+            state: {
+              status: "email_failed",
               email: formData.email 
             } 
           });

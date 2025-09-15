@@ -11,6 +11,7 @@ import LandingPage from "./Pages/Landing/LandingPage.jsx";
 import SignUpForm from "./AuthenticatePages/SignUpForm.jsx";
 import LoginForm from "./AuthenticatePages/LoginForm.jsx";
 import VerifyPending from "./AuthenticatePages/VerifyPendingPage.jsx";
+import WrongEmailPage from "./AuthenticatePages/WrongEmailPage.jsx";
 
 // !Reviewer
 import ReviewerLayout from "./Pages/Reviewer/ReviewerLayout.jsx";
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/signup" element={<SignUpForm />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/verify" element={<VerifyPending />} />
+          <Route path="/wrong-email" element={<WrongEmailPage />} />
           <Route path="/home" element={<RoleBasedRedirect />} />
           
           {/* Profile and Preferences - No role parameter needed */}

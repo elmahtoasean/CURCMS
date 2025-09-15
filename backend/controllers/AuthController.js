@@ -7,7 +7,6 @@ import {
 } from "../validations/authValidation.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
 import { emailQueue, emailQueueName } from "../jobs/SendEmailJob.js";
 import logger from "../config/logger.js";
 
@@ -16,6 +15,32 @@ const vine = new Vine();
 
 // In-memory storage for pending registrations (use Redis in production)
 const pendingRegistrations = new Map();
+
+const resolveEmailVerificationSecret = () =>
+  process.env.EMAIL_VERIFY_SECRET || process.env.JWT_SECRET;
+
+const getDisallowedEmailDomains = () => {
+  const configuredDomains = process.env.DISALLOWED_EMAIL_DOMAINS;
+
+  if (configuredDomains === undefined) {
+    return ["gmail.com"];
+  }
+
+  return configuredDomains
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter((domain) => domain.length > 0);
+};
+
+const isEmailFromDisallowedDomain = (email = "") => {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+
+  const disallowedDomains = getDisallowedEmailDomains();
+  if (disallowedDomains.length === 0) return false;
+
+  return disallowedDomains.includes(domain);
+};
 
 class AuthController {
   static async register(req, res) {
@@ -34,6 +59,17 @@ class AuthController {
         return res.status(400).json({
           errors: {
             email: "Email already taken. Please use another one.",
+          },
+        });
+      }
+
+      if (isEmailFromDisallowedDomain(payload.email)) {
+        const emailDomain = payload.email.split("@")[1] || "";
+        return res.status(400).json({
+          wrongEmailDomain: true,
+          disallowedDomain: emailDomain,
+          errors: {
+            email: "Please use your official university email address.",
           },
         });
       }
@@ -98,8 +134,31 @@ class AuthController {
       const salt = bcrypt.genSaltSync(10);
       const hashedPassword = bcrypt.hashSync(payload.password, salt);
 
+      const emailVerificationSecret = resolveEmailVerificationSecret();
+      if (!emailVerificationSecret) {
+        logger.error("Email verification secret is not configured");
+        return res.status(500).json({
+          status: 500,
+          message: "Email verification is temporarily unavailable. Please try again later.",
+          emailSent: false,
+          emailError: true,
+        });
+      }
+
+      const verificationPayload = {
+        name: payload.name,
+        email: payload.email,
+        password: hashedPassword,
+        role: payload.role,
+        department_name: payload.department_name || null,
+        roll_number: payload.roll_number || null,
+        designation: payload.designation || null,
+      };
+
       //! Generate verification token
-      const verifyToken = crypto.randomBytes(32).toString("hex");
+      const verifyToken = jwt.sign(verificationPayload, emailVerificationSecret, {
+        expiresIn: "24h",
+      });
 
       //! Store registration data temporarily (not in database yet)
       const registrationData = {
@@ -117,7 +176,8 @@ class AuthController {
       pendingRegistrations.set(verifyToken, registrationData);
 
       //! Send verification email
-      const verifyLink = `${process.env.APP_URL}/api/auth/verify/${verifyToken}`;
+      const appUrlBase = process.env.APP_URL || "http://localhost:8000";
+      const verifyLink = `${appUrlBase}/api/auth/verify/${verifyToken}`;
       const emailJobPayload = [
         {
           toEmail: payload.email,
@@ -180,16 +240,58 @@ class AuthController {
   static async verifyEmail(req, res) {
     try {
       const { token } = req.params;
+      const emailVerificationSecret = resolveEmailVerificationSecret();
+      if (!emailVerificationSecret) {
+        logger.error("Email verification secret is not configured");
+        return res.status(500).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h2 style="color: #dc3545;">Verification Temporarily Unavailable</h2>
+            <p>Email verification is currently unavailable. Please contact support.</p>
+          </body>
+        </html>
+      `);
+      }
 
-      // Check if token exists in pending registrations
-      const registrationData = pendingRegistrations.get(token);
+      let registrationData = pendingRegistrations.get(token);
 
-      if (!registrationData) {
+      if (registrationData && new Date() > registrationData.expiresAt) {
+        pendingRegistrations.delete(token);
         return res.status(400).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #dc3545;">Invalid or Expired Verification Link</h2>
-            <p>This verification link is invalid or has expired.</p>
+            <h2 style="color: #dc3545;">Verification Link Expired</h2>
+            <p>This verification link has expired. Please register again.</p>
+            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+          </body>
+        </html>
+      `);
+      }
+
+      let decodedPayload;
+      try {
+        decodedPayload = jwt.verify(token, emailVerificationSecret);
+      } catch (error) {
+        pendingRegistrations.delete(token);
+
+        if (error.name === "TokenExpiredError") {
+          return res.status(400).send(`
+          <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+              <h2 style="color: #dc3545;">Verification Link Expired</h2>
+              <p>This verification link has expired. Please register again.</p>
+              <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+            </body>
+          </html>
+        `);
+        }
+
+        logger.error("Invalid verification token", error);
+        return res.status(400).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h2 style="color: #dc3545;">Invalid Verification Link</h2>
+            <p>This verification link is invalid or has been tampered with.</p>
             <p>Please try registering again.</p>
             <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
           </body>
@@ -197,14 +299,28 @@ class AuthController {
       `);
       }
 
-      // Check if registration has expired (24 hours)
-      if (new Date() > registrationData.expiresAt) {
+      if (!registrationData) {
+        registrationData = {
+          name: decodedPayload.name,
+          email: decodedPayload.email,
+          password: decodedPayload.password,
+          role: decodedPayload.role,
+          department_name: decodedPayload.department_name,
+          roll_number: decodedPayload.roll_number,
+          designation: decodedPayload.designation,
+        };
+      }
+
+      if (!registrationData?.email || !registrationData?.password || !registrationData?.role) {
         pendingRegistrations.delete(token);
+        logger.error("Verification payload is missing required fields", {
+          decodedPayload,
+        });
         return res.status(400).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #dc3545;">Verification Link Expired</h2>
-            <p>This verification link has expired. Please register again.</p>
+            <h2 style="color: #dc3545;">Invalid Verification Link</h2>
+            <p>This verification link is invalid. Please try registering again.</p>
             <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
           </body>
         </html>

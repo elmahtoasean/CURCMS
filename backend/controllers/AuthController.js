@@ -7,73 +7,14 @@ import {
 } from "../validations/authValidation.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { emailQueue, emailQueueName } from "../jobs/SendEmailJob.js";
 import logger from "../config/logger.js";
-
 
 const vine = new Vine();
 
 // In-memory storage for pending registrations (use Redis in production)
 const pendingRegistrations = new Map();
-
-const stripTrailingSlashes = (value = "") => value.replace(/\/+$/, "");
-
-const resolveEmailVerificationSecret = () =>
-  process.env.EMAIL_VERIFY_SECRET || process.env.JWT_SECRET;
-
-const resolveAppUrlBase = (req) => {
-  const configuredBase = process.env.APP_URL;
-  if (configuredBase) {
-    return stripTrailingSlashes(configuredBase);
-  }
-
-  const forwardedProto = req.headers["x-forwarded-proto"]
-    ?.split(",")[0]
-    ?.trim();
-  const forwardedHost = req.headers["x-forwarded-host"]
-    ?.split(",")[0]
-    ?.trim();
-
-  if (forwardedProto && forwardedHost) {
-    return stripTrailingSlashes(`${forwardedProto}://${forwardedHost}`);
-  }
-
-  const host = req.get("host");
-  if (host) {
-    const protocol =
-      forwardedProto ||
-      req.headers["x-forwarded-protocol"]?.split(",")[0]?.trim() ||
-      req.protocol ||
-      "http";
-
-    return stripTrailingSlashes(`${protocol}://${host}`);
-  }
-
-  return "http://localhost:8000";
-};
-
-const getDisallowedEmailDomains = () => {
-  const configuredDomains = process.env.DISALLOWED_EMAIL_DOMAINS;
-
-  if (configuredDomains === undefined) {
-    return ["gmail.com"];
-  }
-
-  return configuredDomains
-    .split(",")
-    .map((domain) => domain.trim().toLowerCase())
-    .filter((domain) => domain.length > 0);
-};
-
-const isEmailFromDisallowedDomain = (email = "") => {
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return false;
-
-  const disallowedDomains = getDisallowedEmailDomains();
-  if (disallowedDomains.length === 0) return false;
-
-  return disallowedDomains.includes(domain);
-};
 
 class AuthController {
   static async register(req, res) {
@@ -92,18 +33,6 @@ class AuthController {
         return res.status(400).json({
           errors: {
             email: "Email already taken. Please use another one.",
-          },
-        });
-      }
-
-      if (isEmailFromDisallowedDomain(payload.email)) {
-        const emailDomain = payload.email.split("@")[1] || "";
-        return res.status(400).json({
-          wrongEmailDomain: true,
-          disallowedDomain: emailDomain,
-          message: "Please use your official university email address.",
-          errors: {
-            email: "Please use your official university email address.",
           },
         });
       }
@@ -168,31 +97,8 @@ class AuthController {
       const salt = bcrypt.genSaltSync(10);
       const hashedPassword = bcrypt.hashSync(payload.password, salt);
 
-      const emailVerificationSecret = resolveEmailVerificationSecret();
-      if (!emailVerificationSecret) {
-        logger.error("Email verification secret is not configured");
-        return res.status(500).json({
-          status: 500,
-          message: "Email verification is temporarily unavailable. Please try again later.",
-          emailSent: false,
-          emailError: true,
-        });
-      }
-
-      const verificationPayload = {
-        name: payload.name,
-        email: payload.email,
-        password: hashedPassword,
-        role: payload.role,
-        department_name: payload.department_name || null,
-        roll_number: payload.roll_number || null,
-        designation: payload.designation || null,
-      };
-
       //! Generate verification token
-      const verifyToken = jwt.sign(verificationPayload, emailVerificationSecret, {
-        expiresIn: "24h",
-      });
+      const verifyToken = crypto.randomBytes(32).toString("hex");
 
       //! Store registration data temporarily (not in database yet)
       const registrationData = {
@@ -210,8 +116,7 @@ class AuthController {
       pendingRegistrations.set(verifyToken, registrationData);
 
       //! Send verification email
-      const appUrlBase = resolveAppUrlBase(req);
-      const verifyLink = `${appUrlBase}/api/auth/verify/${verifyToken}`;
+      const verifyLink = `${process.env.APP_URL}/api/auth/verify/${verifyToken}`;
       const emailJobPayload = [
         {
           toEmail: payload.email,
@@ -270,92 +175,35 @@ class AuthController {
   }
 
   //! Email verification handler - Creates user in database upon verification
-  // Updated verifyEmail method with proper transaction handling
   static async verifyEmail(req, res) {
     try {
       const { token } = req.params;
-      const emailVerificationSecret = resolveEmailVerificationSecret();
-      if (!emailVerificationSecret) {
-        logger.error("Email verification secret is not configured");
-        return res.status(500).send(`
+
+      // Check if token exists in pending registrations
+      const registrationData = pendingRegistrations.get(token);
+
+      if (!registrationData) {
+        return res.status(400).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #dc3545;">Verification Temporarily Unavailable</h2>
-            <p>Email verification is currently unavailable. Please contact support.</p>
+            <h2 style="color: #dc3545;">Invalid or Expired Verification Link</h2>
+            <p>This verification link is invalid or has expired.</p>
+            <p>Please try registering again.</p>
+            <a href="${process.env.FRONTEND_URL}/signup" style="color: #007bff;">Go to Registration</a>
           </body>
         </html>
       `);
       }
 
-      let registrationData = pendingRegistrations.get(token);
-
-      if (registrationData && new Date() > registrationData.expiresAt) {
+      // Check if registration has expired (24 hours)
+      if (new Date() > registrationData.expiresAt) {
         pendingRegistrations.delete(token);
         return res.status(400).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h2 style="color: #dc3545;">Verification Link Expired</h2>
             <p>This verification link has expired. Please register again.</p>
-            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
-          </body>
-        </html>
-      `);
-      }
-
-      let decodedPayload;
-      try {
-        decodedPayload = jwt.verify(token, emailVerificationSecret);
-      } catch (error) {
-        pendingRegistrations.delete(token);
-
-        if (error.name === "TokenExpiredError") {
-          return res.status(400).send(`
-          <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h2 style="color: #dc3545;">Verification Link Expired</h2>
-              <p>This verification link has expired. Please register again.</p>
-              <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
-            </body>
-          </html>
-        `);
-        }
-
-        logger.error("Invalid verification token", error);
-        return res.status(400).send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #dc3545;">Invalid Verification Link</h2>
-            <p>This verification link is invalid or has been tampered with.</p>
-            <p>Please try registering again.</p>
-            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
-          </body>
-        </html>
-      `);
-      }
-
-      if (!registrationData) {
-        registrationData = {
-          name: decodedPayload.name,
-          email: decodedPayload.email,
-          password: decodedPayload.password,
-          role: decodedPayload.role,
-          department_name: decodedPayload.department_name,
-          roll_number: decodedPayload.roll_number,
-          designation: decodedPayload.designation,
-        };
-      }
-
-      if (!registrationData?.email || !registrationData?.password || !registrationData?.role) {
-        pendingRegistrations.delete(token);
-        logger.error("Verification payload is missing required fields", {
-          decodedPayload,
-        });
-        return res.status(400).send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #dc3545;">Invalid Verification Link</h2>
-            <p>This verification link is invalid. Please try registering again.</p>
-            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+            <a href="${process.env.FRONTEND_URL}/signup" style="color: #007bff;">Go to Registration</a>
           </body>
         </html>
       `);
@@ -438,9 +286,9 @@ class AuthController {
       // Remove from pending registrations only after successful creation
       pendingRegistrations.delete(token);
 
-      // Add a small delay to ensure the redirect works properly
+      // Redirect to frontend
       setTimeout(() => {
-        res.redirect("http://localhost:5173/login?verified=true&registered=true");
+        res.redirect(`${process.env.FRONTEND_URL}/login?verified=true&registered=true`);
       }, 100);
 
     } catch (err) {
@@ -453,7 +301,7 @@ class AuthController {
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h2 style="color: #dc3545;">Email Already Registered</h2>
             <p>This email address has been registered by someone else.</p>
-            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+            <a href="${process.env.FRONTEND_URL}/signup" style="color: #007bff;">Go to Registration</a>
           </body>
         </html>
       `);
@@ -466,7 +314,7 @@ class AuthController {
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h2 style="color: #dc3545;">Roll Number Already Taken</h2>
             <p>This roll number has been registered by someone else.</p>
-            <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+            <a href="${process.env.FRONTEND_URL}/signup" style="color: #007bff;">Go to Registration</a>
           </body>
         </html>
       `);
@@ -477,226 +325,12 @@ class AuthController {
         <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
           <h2 style="color: #dc3545;">Verification Failed</h2>
           <p>An error occurred during verification. Please try registering again.</p>
-          <a href="http://localhost:5173/signup" style="color: #007bff;">Go to Registration</a>
+          <a href="${process.env.FRONTEND_URL}/signup" style="color: #007bff;">Go to Registration</a>
         </body>
       </html>
     `);
     }
   }
-
-  //! LOGIN - No changes needed
-  static async login(req, res) {
-    try {
-      const body = req.body;
-      const validator = vine.compile(loginSchema);
-      const payload = await validator.validate(body);
-
-      // Check if email exists
-      const findUser = await prisma.user.findUnique({
-        where: {
-          email: payload.email,
-        },
-      });
-
-      if (!findUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const isMatch = bcrypt.compareSync(payload.password, findUser.password);
-      if (!isMatch) {
-        return res.status(400).json({
-          errors: {
-            email: "Invalid Credentials.",
-          },
-        });
-      }
-
-      //! This check is no longer needed since users are only created after verification
-      // But keeping it for safety
-      if (!findUser.isVerified) {
-        return res
-          .status(401)
-          .json({ error: "Please verify your email before logging in." });
-      }
-
-      // Issue token to user
-      const payloadData = {
-        id: findUser.user_id,
-        name: findUser.name,
-        email: findUser.email,
-        role: findUser.role,
-        isEmailVerified: findUser.isVerified,
-      };
-
-      const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-        expiresIn: "30d",
-      });
-
-
-      return res.status(200).json({
-        success: true,
-        message: `${findUser.role} Login successful`,
-        token,
-        user: {
-          id: findUser.user_id,
-          name: findUser.name,
-          email: findUser.email,
-          role: findUser.role,
-          isMainAdmin: findUser.isMainAdmin,
-          isEmailVerified: findUser.isVerified,
-        },
-      });
-    } catch (error) {
-      console.log("The error is", error);
-      if (error instanceof errors.E_VALIDATION_ERROR) {
-        return res.status(400).json({
-          errors: error.messages,
-        });
-      } else {
-        return res.status(500).json({
-          status: 500,
-          error: "Something went wrong. Please try again.",
-        });
-      }
-    }
-  }
-
-  // Helper method to clean up expired pending registrations
-  static cleanupExpiredRegistrations() {
-    const now = new Date();
-    for (const [token, data] of pendingRegistrations.entries()) {
-      if (now > data.expiresAt) {
-        pendingRegistrations.delete(token);
-      }
-    }
-  }
-  static async switchRole(req, res) {
-    try {
-      const userId = req.user.id; // from auth middleware
-      const { newRole } = req.body;
-
-      if (!["TEACHER", "REVIEWER"].includes(newRole)) {
-        return res.status(400).json({ error: "Invalid role to switch." });
-      }
-
-      // Fetch user with related teacher info (if exists)
-      const user = await prisma.user.findUnique({
-        where: { user_id: userId },
-      });
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found." });
-      }
-
-      if (user.role === newRole) {
-        return res.status(400).json({ error: `Already in role ${newRole}.` });
-      }
-
-      // Fetch teacher record for this user
-      const teacherRecord = await prisma.teacher.findFirst({
-        where: { user_id: userId },
-      });
-
-      // Check if switching to REVIEWER is allowed
-      if (newRole === "REVIEWER") {
-        if (!teacherRecord || teacherRecord.isReviewer === false) {
-          return res.status(403).json({
-            error:
-              "User is not authorized to switch to REVIEWER role. Must be a teacher marked as reviewer.",
-          });
-        }
-      }
-
-      // If switching back to TEACHER, no extra check needed
-
-      // Update user role in DB
-      await prisma.user.update({
-        where: { user_id: userId },
-        data: {
-          role: newRole,
-        },
-      });
-
-      // Issue new JWT token with updated role
-      const payloadData = {
-        id: user.user_id,
-        name: user.name,
-        email: user.email,
-        role: newRole,
-        emailVerified: !!user.isVerified,
-        isMainAdmin: !!user.isMainAdmin,
-      };
-
-      const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-        expiresIn: "30d",
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: `Role switched to ${newRole} successfully.`,
-        token,
-        user: {
-          id: user.user_id,
-          name: user.name,
-          email: user.email,
-          role: newRole,
-          isMainAdmin: user.isMainAdmin,
-          emailVerified: !!user.isVerified,
-        },
-      });
-    } catch (error) {
-      console.error("SwitchRole error:", error);
-      return res.status(500).json({
-        error: "Something went wrong while switching roles.",
-      });
-    }
-  }
-
-
-
-  /*/* Send test Email
-  static async sendTestEmail(req, res) {
-    try {
-      const { email } = req.query;
-      const payload = [
-        {
-          toEmail: email,
-          subject: "Hi I am just testing",
-          body: "<h1>Hello World!</h1>",
-        },
-        {
-          toEmail: email,
-          subject: "You got an amazing offer",
-          body: "<h1>Hello Tushar! You got this amazing offer</h1>",
-        },
-        {
-          toEmail: email,
-          subject: "You got an amazing offer",
-          body: "<h1>Hello Tushu! You got this amazing offer</h1>",
-        },
-      ];
-      await emailQueue.add(emailQueueName, payload);
-
-      return res.json({
-        status: 200,
-        message: "Job added successfully",
-      });
-    } catch (error) {
-      logger.error({
-        type: "Email error",
-        body: error,
-      });
-
-      return res
-        .status(500)
-        .json({ error: "Something went wrong. Please try again." });
-    }
-  }*/
 }
-
-// Clean up expired registrations every hour
-setInterval(() => {
-  AuthController.cleanupExpiredRegistrations();
-}, 60 * 60 * 1000);
 
 export default AuthController;

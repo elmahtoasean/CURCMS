@@ -1,4 +1,4 @@
-import prisma from "../DB/db.config.js"; 
+import prisma from "../DB/db.config.js";
 import { Vine, errors } from "@vinejs/vine";
 import {
   registerSchema,
@@ -53,13 +53,13 @@ const buildAuthResponse = (user) => {
 
   const availableRoles = new Set();
 
-    if (user.role) {
+  if (user.role) {
     availableRoles.add(user.role);
   }
 
   if (teacherRecord) {
     availableRoles.add("TEACHER");
-    
+
     if (teacherRecord.isReviewer) {
       availableRoles.add("REVIEWER");
     }
@@ -326,7 +326,7 @@ class AuthController {
       }
 
       const hashedPassword = bcrypt.hashSync(registrationData.password, 10);
-      const newUser = await prisma.user.create({
+      await prisma.user.create({
         data: {
           name: registrationData.name,
           email: registrationData.email,
@@ -349,93 +349,93 @@ class AuthController {
     }
   }
 
-static async switchRole(req, res) {
-  try {
-    const userIdRaw = req.user?.id ?? req.user?.user_id; 
-    const userId = Number(userIdRaw);
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized access." });
-    }
+  static async switchRole(req, res) {
+    try {
+      const userIdRaw = req.user?.id ?? req.user?.user_id;
+      const userId = Number(userIdRaw);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized access." });
+      }
 
-    // Normalize role string
-    const newRoleInput = (req.body?.newRole || "").toString().trim().toUpperCase();
+      // Normalize role string
+      const newRoleInput = (req.body?.newRole || "").toString().trim().toUpperCase();
 
-    // Only allow TEACHER or REVIEWER
-    if (!["TEACHER", "REVIEWER"].includes(newRoleInput)) {
-      return res.status(400).json({ error: "Invalid role to switch." });
-    }
+      // Only allow TEACHER or REVIEWER
+      if (!["TEACHER", "REVIEWER"].includes(newRoleInput)) {
+        return res.status(400).json({ error: "Invalid role to switch." });
+      }
 
-    // Fetch user
-    const user = await prisma.user.findUnique({
-      where: { user_id: userId },
-    });
+      // Fetch user
+      const user = await prisma.user.findUnique({
+        where: { user_id: userId },
+      });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
-    }
+      if (!user) {
+        return res.status(404).json({ error: "User not found." });
+      }
 
-    if ((user.role || "").toUpperCase() === newRoleInput) {
-      return res.status(400).json({ error: `Already in role ${newRoleInput}.` });
-    }
+      if ((user.role || "").toUpperCase() === newRoleInput) {
+        return res.status(400).json({ error: `Already in role ${newRoleInput}.` });
+      }
 
-    const teacherRecord = await prisma.teacher.findFirst({
-      where: { user_id: userId },
-      select: { isReviewer: true, teacher_id: true },
-    });
+      const teacherRecord = await prisma.teacher.findFirst({
+        where: { user_id: userId },
+        select: { isReviewer: true, teacher_id: true },
+      });
 
-    if (newRoleInput === "REVIEWER") {
-      if (!teacherRecord || teacherRecord.isReviewer !== true) {
-        return res.status(403).json({
-          error:
-            "User is not authorized to switch to REVIEWER role. Must be a teacher marked as reviewer.",
+      if (newRoleInput === "REVIEWER") {
+        if (!teacherRecord || teacherRecord.isReviewer !== true) {
+          return res.status(403).json({
+            error:
+              "User is not authorized to switch to REVIEWER role. Must be a teacher marked as reviewer.",
+          });
+        }
+      }
+
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({
+          error: "Auth configuration error: JWT secret not configured.",
         });
       }
-    }
-    
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({
-        error: "Auth configuration error: JWT secret not configured.",
+
+      await prisma.user.update({
+        where: { user_id: userId },
+        data: { role: newRoleInput },
       });
-    }
-    
-    await prisma.user.update({
-      where: { user_id: userId },
-      data: { role: newRoleInput },
-    });
 
-    const payloadData = {
-      id: user.user_id,
-      name: user.name,
-      email: user.email,
-      role: newRoleInput,
-      emailVerified: !!user.isVerified,
-      isMainAdmin: !!user.isMainAdmin,
-    };
-
-    const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: `Role switched to ${newRoleInput} successfully.`,
-      token,
-      user: {
+      const payloadData = {
         id: user.user_id,
         name: user.name,
         email: user.email,
         role: newRoleInput,
-        isMainAdmin: !!user.isMainAdmin,
         emailVerified: !!user.isVerified,
-      },
-    });
-  } catch (error) {
-    console.error("SwitchRole error:", error);
-    return res.status(500).json({
-      error: "Something went wrong while switching roles.",
-    });
+        isMainAdmin: !!user.isMainAdmin,
+      };
+
+      const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
+        expiresIn: "30d",
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Role switched to ${newRoleInput} successfully.`,
+        token,
+        user: {
+          id: user.user_id,
+          name: user.name,
+          email: user.email,
+          role: newRoleInput,
+          isMainAdmin: !!user.isMainAdmin,
+          emailVerified: !!user.isVerified,
+        },
+      });
+    } catch (error) {
+      console.error("SwitchRole error:", error);
+      return res.status(500).json({
+        error: "Something went wrong while switching roles.",
+      });
+    }
   }
 }
-
 
 export default AuthController;

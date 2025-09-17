@@ -3,16 +3,30 @@ import { sendEmail } from "../config/mailer.js";
 
 export const emailQueueName = "email-queue";
 
-function ensureArray(data) {
-  if (!Array.isArray(data)) {
-    throw new Error("Invalid job data format");
+function normalizeJobs(data) {
+  if (!data) {
+    return [];
   }
-  return data;
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  // Support single job objects by converting them to an array
+  return [data];
+}
+
+function resolveRecipient(job) {
+  return job?.toEmail || job?.to || job?.email || null;
+}
+
+function resolveBody(job) {
+  return job?.body || job?.html || job?.message || null;
 }
 
 export const emailQueue = {
   async add(_queueName, data) {
-    const jobs = ensureArray(data);
+    const jobs = normalizeJobs(data);
     if (jobs.length === 0) {
       logger.warn("Email queue received an empty batch");
       return [];
@@ -21,7 +35,7 @@ export const emailQueue = {
     const results = [];
 
     for (const item of jobs) {
-      const toEmail = item?.toEmail;
+      const toEmail = resolveRecipient(item);
       if (!toEmail) {
         const error = new Error("Missing recipient email address");
         logger.error("Email send failed due to missing recipient", { item });
@@ -29,9 +43,18 @@ export const emailQueue = {
         continue;
       }
 
+      const emailBody = resolveBody(item);
+      if (!emailBody) {
+        const error = new Error("Missing email body");
+        logger.error("Email send failed due to missing body", { item });
+        results.push({ email: toEmail, status: "failed", error: error.message });
+        continue;
+      }
+
       try {
+        const subject = item?.subject || "";
         logger.info(`Sending email to: ${toEmail}`);
-        await sendEmail(toEmail, item.subject, item.body);
+        await sendEmail(toEmail, subject, emailBody);
         logger.info(`Email sent successfully to: ${toEmail}`);
         results.push({ email: toEmail, status: "success" });
       } catch (error) {

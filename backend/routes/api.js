@@ -39,7 +39,7 @@ router.get("/public/filters", getPublicFilters);
 
 router.post("/auth/register", AuthController.register);
 router.post("/auth/login", AuthController.login);
-router.get("/auth/verify/:token(*)", AuthController.verifyEmail);
+router.get("/auth/verify/:token", AuthController.verifyEmail);
 router.get("/auth/verify-email", AuthController.verifyEmail);
 router.post("/auth/switch-role", authMiddleware, AuthController.switchRole);
 
@@ -89,13 +89,13 @@ router.post("/papers/upload", authMiddleware, PaperController.upload);
 router.get("/teams/:teamId/papers", authMiddleware, PaperController.getTeamPapers);
 // Team-facing anonymized review views
 router.get(
-  "/api/team/papers/:paperId/public-reviews",
+  "/team/papers/:paperId/public-reviews",
   authMiddleware,
   TeamDetails.getPublicReviewsForPaper
 );
 
 router.get(
-  "/api/team/proposals/:proposalId/public-reviews",
+  "/team/proposals/:proposalId/public-reviews",
   authMiddleware,
   TeamDetails.getPublicReviewsForProposal
 );

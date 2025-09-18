@@ -288,88 +288,65 @@ class AuthController {
   try {
     const { token } = req.params;
 
-    let registrationData;
+    let data;
     try {
-      registrationData = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
-      return res.status(400).send(`
-        <html><body><h2>Invalid or Expired Verification Link</h2></body></html>
-      `);
+      data = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      console.error('JWT VERIFY ERROR', err.name, err.message);
+      return res.status(400).send('<html><body><h2>Invalid or Expired Verification Link</h2></body></html>');
     }
 
-  
-    const emailExists = await prisma.user.findUnique({ where: { email: registrationData.email } });
+    // Uniqueness checks
+    const emailExists = await prisma.user.findUnique({ where: { email: data.email } });
     if (emailExists) {
-      return res.status(400).send(`
-        <html><body><h2>Email Already Registered</h2></body></html>
-      `);
+      return res.status(400).send('<html><body><h2>Email Already Registered</h2></body></html>');
     }
 
-    if (registrationData.roll_number) {
-      const rollExists = await prisma.student.findUnique({
-        where: { roll_number: registrationData.roll_number },
-      });
+    if (data.roll_number) {
+      const rollExists = await prisma.student.findUnique({ where: { roll_number: data.roll_number } });
       if (rollExists) {
-        return res.status(400).send(`
-          <html><body><h2>Roll Number Already Taken</h2></body></html>
-        `);
+        return res.status(400).send('<html><body><h2>Roll Number Already Taken</h2></body></html>');
       }
     }
 
     await prisma.$transaction(async (tx) => {
-    
+      // optional department create/find
       let departmentId = null;
-      if (registrationData.department_name) {
-        let dept = await tx.department.findUnique({
-          where: { department_name: registrationData.department_name },
-        });
+      if (data.department_name) {
+        let dept = await tx.department.findUnique({ where: { department_name: data.department_name } });
         if (!dept) {
-          dept = await tx.department.create({
-            data: { department_name: registrationData.department_name },
-          });
+          dept = await tx.department.create({ data: { department_name: data.department_name } });
         }
         departmentId = dept.department_id;
       }
 
       const newUser = await tx.user.create({
         data: {
-          name: registrationData.name,
-          email: registrationData.email,
-          password: registrationData.hashedPassword,
-          role: registrationData.role || "GENERALUSER",
+          name: data.name,
+          email: data.email,
+          password: data.hashedPassword,      // already hashed in the token
+          role: data.role || 'GENERALUSER',
           isVerified: true,
         },
       });
 
-      if (registrationData.role === "STUDENT" && registrationData.roll_number) {
+      if (data.role === 'STUDENT' && data.roll_number) {
         await tx.student.create({
-          data: {
-            roll_number: registrationData.roll_number,
-            department_id: departmentId,
-            user_id: newUser.user_id,
-          },
+          data: { roll_number: data.roll_number, department_id: departmentId, user_id: newUser.user_id },
         });
-      } else if (registrationData.role === "TEACHER") {
+      } else if (data.role === 'TEACHER') {
         await tx.teacher.create({
-          data: {
-            designation: registrationData.designation || "Lecturer",
-            department_id: departmentId,
-            user_id: newUser.user_id,
-          },
+          data: { designation: data.designation || 'Lecturer', department_id: departmentId, user_id: newUser.user_id },
         });
       } else {
-        await tx.generaluser.create({
-          data: { user_id: newUser.user_id },
-        });
+        await tx.generaluser.create({ data: { user_id: newUser.user_id } });
       }
     });
 
-    return res.send(`<html><body><h2>Email Verified</h2></body></html>`);
+    return res.send('<html><body><h2>Email Verified</h2></body></html>');
   } catch (err) {
-    logger.error("Verify email error:", err);
-    return res.status(400).send(`
-      <html><body><h2>Verification Failed</h2></body></html>
-    `);
+    console.error('Verify email error:', err);
+    return res.status(400).send('<html><body><h2>Verification Failed</h2></body></html>');
   }
 }
 

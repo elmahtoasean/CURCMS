@@ -286,16 +286,16 @@ class AuthController {
 
  static async verifyEmail(req, res) {
   try {
-    const { token } = req.params;
+    const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
+    const token = req.params.token || req.query.token;
+    if (!token) return res.redirect(`${FE}/verify?status=missing_token`);
 
     let data;
     try {
       data = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      console.error('JWT VERIFY ERROR', err.name, err.message);
-      return res.status(400).send('<html><body><h2>Invalid or Expired Verification Link</h2></body></html>');
+    } catch {
+      return res.redirect(`${FE}/verify?status=invalid_or_expired`);
     }
-
     // Uniqueness checks
     const emailExists = await prisma.user.findUnique({ where: { email: data.email } });
     if (emailExists) {
@@ -343,10 +343,10 @@ class AuthController {
       }
     });
 
-    return res.send('<html><body><h2>Email Verified</h2></body></html>');
+     return res.redirect(`${FE}/login?verified=true&registered=true`);
   } catch (err) {
-    console.error('Verify email error:', err);
-    return res.status(400).send('<html><body><h2>Verification Failed</h2></body></html>');
+    const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
+    return res.redirect(`${FE}/verify?status=failed`);
   }
 }
 

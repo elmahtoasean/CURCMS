@@ -206,7 +206,7 @@ class AuthController {
           html: `
             <h2>Welcome to UCMS</h2>
             <p>Please verify your email by clicking the link below:</p>
-            <a href="${process.env.BACKEND_URL}/api/auth/verify/${verifyToken}">Verify Email</a>
+            <a href="${process.env.APP_URL}/api/auth/verify/${verifyToken}">Verify Email</a>
           `,
         });
 

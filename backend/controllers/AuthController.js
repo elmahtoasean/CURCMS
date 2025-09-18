@@ -284,69 +284,117 @@ class AuthController {
     }
   }
 
- static async verifyEmail(req, res) {
+static async verifyEmail(req, res) {
+  const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
   try {
-    const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
     const token = req.params.token || req.query.token;
-    if (!token) return res.redirect(`${FE}/verify?status=missing_token`);
+    if (!token) {
+      console.warn("[verifyEmail] Missing token param/query");
+      return res.redirect(`${FE}/verify?status=missing_token`);
+    }
 
     let data;
     try {
       data = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
+      console.log("[verifyEmail] JWT OK for:", data.email);
+    } catch (e) {
+      console.error("[verifyEmail] JWT VERIFY ERROR:", e.name, e.message);
       return res.redirect(`${FE}/verify?status=invalid_or_expired`);
     }
-    // Uniqueness checks
-    const emailExists = await prisma.user.findUnique({ where: { email: data.email } });
-    if (emailExists) {
-      return res.status(400).send('<html><body><h2>Email Already Registered</h2></body></html>');
-    }
 
-    if (data.roll_number) {
-      const rollExists = await prisma.student.findUnique({ where: { roll_number: data.roll_number } });
+    // Defensive uniqueness checks before we write
+    try {
+      const [emailExists, rollExists] = await Promise.all([
+        prisma.user.findUnique({ where: { email: data.email } }),
+        data.roll_number
+          ? prisma.student.findUnique({ where: { roll_number: data.roll_number } })
+          : Promise.resolve(null),
+      ]);
+
+      if (emailExists) {
+        console.warn("[verifyEmail] Email already registered:", data.email);
+        return res.redirect(`${FE}/verify?status=email_taken`);
+      }
       if (rollExists) {
-        return res.status(400).send('<html><body><h2>Roll Number Already Taken</h2></body></html>');
+        console.warn("[verifyEmail] Roll already taken:", data.roll_number);
+        return res.redirect(`${FE}/verify?status=roll_taken`);
       }
+    } catch (e) {
+      console.error("[verifyEmail] Pre-check DB error:", e);
+      return res.redirect(`${FE}/verify?status=db_error_precheck`);
     }
 
-    await prisma.$transaction(async (tx) => {
-      // optional department create/find
-      let departmentId = null;
-      if (data.department_name) {
-        let dept = await tx.department.findUnique({ where: { department_name: data.department_name } });
-        if (!dept) {
-          dept = await tx.department.create({ data: { department_name: data.department_name } });
+    // Create user + role rows atomically
+    try {
+      await prisma.$transaction(async (tx) => {
+        // optional department create/find
+        let departmentId = null;
+        if (data.department_name) {
+          // NOTE: department_name should be UNIQUE in Prisma schema for findUnique to work
+          let dept = await tx.department.findUnique({
+            where: { department_name: data.department_name },
+          });
+          if (!dept) {
+            dept = await tx.department.create({
+              data: { department_name: data.department_name },
+            });
+          }
+          departmentId = dept.department_id;
         }
-        departmentId = dept.department_id;
-      }
 
-      const newUser = await tx.user.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          password: data.hashedPassword,      // already hashed in the token
-          role: data.role || 'GENERALUSER',
-          isVerified: true,
-        },
+        const newUser = await tx.user.create({
+          data: {
+            name: data.name,
+            email: data.email,
+            password: data.hashedPassword, // hashed in register()
+            role: (data.role || "GENERALUSER").toUpperCase(),
+            isVerified: true,
+          },
+        });
+
+        const role = (data.role || "GENERALUSER").toUpperCase();
+
+        if (role === "STUDENT" && data.roll_number) {
+          await tx.student.create({
+            data: {
+              roll_number: data.roll_number,
+              department_id: departmentId,
+              user_id: newUser.user_id,
+            },
+          });
+        } else if (role === "TEACHER") {
+          await tx.teacher.create({
+            data: {
+              designation: data.designation || "Lecturer",
+              department_id: departmentId,
+              user_id: newUser.user_id,
+            },
+          });
+        } else {
+          await tx.generaluser.create({
+            data: { user_id: newUser.user_id },
+          });
+        }
       });
-
-      if (data.role === 'STUDENT' && data.roll_number) {
-        await tx.student.create({
-          data: { roll_number: data.roll_number, department_id: departmentId, user_id: newUser.user_id },
-        });
-      } else if (data.role === 'TEACHER') {
-        await tx.teacher.create({
-          data: { designation: data.designation || 'Lecturer', department_id: departmentId, user_id: newUser.user_id },
-        });
-      } else {
-        await tx.generaluser.create({ data: { user_id: newUser.user_id } });
+    } catch (e) {
+      // Catch known Prisma issues and surface clear statuses
+      console.error("[verifyEmail] Transaction DB error:", e?.code || e?.name, e?.message || e);
+      // A few common Prisma codes:
+      // P2002 unique constraint violation; pool timeouts show up as generic timeouts
+      if (e?.code === "P2002") {
+        // Unique constraint hit (race condition)
+        return res.redirect(`${FE}/verify?status=unique_violation`);
       }
-    });
+      // If you saw pool timeouts before, you’ll land here as well
+      return res.redirect(`${FE}/verify?status=db_error_tx`);
+    }
 
-     return res.redirect(`${FE}/login?verified=true&registered=true`);
+    console.log("[verifyEmail] SUCCESS for:", data.email);
+    return res.redirect(`${FE}/login?verified=true&registered=true`);
   } catch (err) {
-    const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
-    return res.redirect(`${FE}/verify?status=failed`);
+    console.error("[verifyEmail] Unhandled error:", err);
+    const FE2 = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
+    return res.redirect(`${FE2}/verify?status=failed`);
   }
 }
 

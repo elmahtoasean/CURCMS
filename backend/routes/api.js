@@ -39,7 +39,7 @@ router.get("/public/filters", getPublicFilters);
 
 router.post("/auth/register", AuthController.register);
 router.post("/auth/login", AuthController.login);
-router.get("/auth/verify/:token", AuthController.verifyEmail);
+router.get("/auth/verify/:token(*)", AuthController.verifyEmail);
 router.get("/auth/verify-email", AuthController.verifyEmail);
 router.post("/auth/switch-role", authMiddleware, AuthController.switchRole);
 

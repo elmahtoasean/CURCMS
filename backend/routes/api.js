@@ -42,7 +42,7 @@ router.post("/auth/login", AuthController.login);
 router.get("/auth/verify/:token", AuthController.verifyEmail);
 router.get("/auth/verify-email", (req, res) => {
   const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
-  return res.redirect(`${FE}/verify`);
+  return res.redirect(`${FE}/#/verify`);
 });
 router.post("/auth/switch-role", authMiddleware, AuthController.switchRole);
 

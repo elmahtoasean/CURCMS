@@ -288,13 +288,13 @@ class AuthController {
   try {
     const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
     const token = req.params.token || req.query.token;
-    if (!token) return res.redirect(`${FE}/verify?status=missing_token`);
+    if (!token) return res.redirect(`${FE}/#/verify?status=missing_token`);
 
     let data;
     try {
       data = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
-      return res.redirect(`${FE}/verify?status=invalid_or_expired`);
+      return res.redirect(`${FE}/#/verify?status=invalid_or_expired`);
     }
     // Uniqueness checks
     const emailExists = await prisma.user.findUnique({ where: { email: data.email } });
@@ -343,10 +343,10 @@ class AuthController {
       }
     });
 
-     return res.redirect(`${FE}/login?verified=true&registered=true`);
+    return res.redirect(`${FE}/#/login?verified=true&registered=true`);
   } catch (err) {
     const FE = process.env.FRONTEND_URL || "https://curcms-1.onrender.com";
-    return res.redirect(`${FE}/verify?status=failed`);
+    return res.redirect(`${FE}/#/verify?status=failed`);
   }
 }
 

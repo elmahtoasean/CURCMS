@@ -10,6 +10,7 @@ import './jobs/SendEmailJob.js';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || "https://curcms-1.onrender.com").replace(/\/$/, "");
 
 app.set("trust proxy", true);
 
@@ -143,10 +144,25 @@ app.use("/api", ApiRoutes);
 import "./jobs/index.js";
 
 
-// //! logger 
+// //! logger
 // import logger from './config/logger.js';
 // logger.info ("Hey I am just testing...") //will save this in combine.log
 // logger.error ("Hey I am just testing Error Log...") //will save this in error.log
+
+const frontendRedirectIgnorePrefixes = ["/api", "/uploads", "/documents", "/images"]; // Paths served by the backend
+
+app.get("*", (req, res, next) => {
+  if (req.method !== "GET") {
+    return next();
+  }
+
+  if (req.path === "/" || frontendRedirectIgnorePrefixes.some((prefix) => req.path.startsWith(prefix))) {
+    return next();
+  }
+
+  const originalPath = req.originalUrl.startsWith("/") ? req.originalUrl : `/${req.originalUrl}`;
+  return res.redirect(`${FRONTEND_BASE_URL}/#${originalPath}`);
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

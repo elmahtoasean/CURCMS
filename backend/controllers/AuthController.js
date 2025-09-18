@@ -165,64 +165,54 @@ const buildAuthResponse = (user) => {
 };
 
 class AuthController {
-  static async register(req, res) {
+   static async register(req, res) {
     try {
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({ error: "Auth not configured (no JWT_SECRET)" });
+      }
+
       const body = req.body;
       const validator = vine.compile(registerSchema);
       const payload = await validator.validate(body);
 
-      const findUser = await prisma.user.findUnique({
-        where: { email: payload.email },
-      });
+
+      const findUser = await prisma.user.findUnique({ where: { email: payload.email } });
       if (findUser) {
         return res.status(400).json({
           errors: { email: "Email already taken. Please use another one." },
         });
       }
-
-      const existingPending = Array.from(pendingRegistrations.values()).find(
-        (reg) => reg.email === payload.email
+      const verifyToken = jwt.sign(
+        {
+          name: payload.name,
+          email: payload.email,
+          role: payload.role || "GENERALUSER",
+          department_name: payload.department_name || null,
+          roll_number: payload.roll_number || null,
+          designation: payload.designation || null,
+          hashedPassword: bcrypt.hashSync(payload.password, 10),
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
       );
-      if (existingPending) {
-        return res.status(400).json({
-          errors: { email: "Email is already pending verification." },
-        });
-      }
 
-      // generate verification token
-      const verifyToken = crypto.randomBytes(32).toString("hex");
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const verifyLink = `${process.env.APP_URL}/api/auth/verify/${verifyToken}`;
 
-      pendingRegistrations.set(verifyToken, {
-        ...payload,
-        expiresAt,
-        email: payload.email,
+      await emailQueue.add(emailQueueName, {
+        to: payload.email,
+        subject: "Verify your email",
+        html: `
+          <h2>Welcome to UCMS</h2>
+          <p>Please verify your email by clicking the link below:</p>
+          <a href="${verifyLink}">Verify Email</a>
+          <p>This link expires in 24 hours.</p>
+        `,
       });
 
-      try {
-        await emailQueue.add(emailQueueName, {
-          to: payload.email,
-          subject: "Verify your email",
-          html: `
-            <h2>Welcome to UCMS</h2>
-            <p>Please verify your email by clicking the link below:</p>
-            <a href="${process.env.APP_URL}/api/auth/verify/${verifyToken}">Verify Email</a>
-          `,
-        });
-
-        return res.json({
-          status: 200,
-          message: "Registration successful. Please verify your email.",
-        });
-      } catch (err) {
-        pendingRegistrations.delete(verifyToken);
-        return res.status(500).json({
-          status: 500,
-          message: "Failed to send verification email. Please try again.",
-          emailSent: false,
-          emailError: true,
-        });
-      }
+      return res.json({
+        status: 200,
+        message: "Registration successful. Please verify your email.",
+      });
     } catch (error) {
       if (error instanceof errors.E_VALIDATION_ERROR) {
         logger.error("Register validation error:", error);
@@ -294,60 +284,95 @@ class AuthController {
     }
   }
 
-  static async verifyEmail(req, res) {
+ static async verifyEmail(req, res) {
+  try {
+    const { token } = req.params;
+
+    let registrationData;
     try {
-      const { token } = req.params;
-      const registrationData = pendingRegistrations.get(token);
+      registrationData = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(400).send(`
+        <html><body><h2>Invalid or Expired Verification Link</h2></body></html>
+      `);
+    }
 
-      if (!registrationData) {
+  
+    const emailExists = await prisma.user.findUnique({ where: { email: registrationData.email } });
+    if (emailExists) {
+      return res.status(400).send(`
+        <html><body><h2>Email Already Registered</h2></body></html>
+      `);
+    }
+
+    if (registrationData.roll_number) {
+      const rollExists = await prisma.student.findUnique({
+        where: { roll_number: registrationData.roll_number },
+      });
+      if (rollExists) {
         return res.status(400).send(`
-          <html><body><h2>Invalid or Expired Verification Link</h2></body></html>
+          <html><body><h2>Roll Number Already Taken</h2></body></html>
         `);
       }
+    }
 
-      if (new Date() > registrationData.expiresAt) {
-        pendingRegistrations.delete(token);
-        return res.status(400).send(`
-          <html><body><h2>Verification link expired</h2></body></html>
-        `);
-      }
-
-      // Validate roll number
-      if (registrationData.roll_number) {
-        const rollExists = await prisma.student.findUnique({
-          where: { roll_number: registrationData.roll_number },
+    await prisma.$transaction(async (tx) => {
+    
+      let departmentId = null;
+      if (registrationData.department_name) {
+        let dept = await tx.department.findUnique({
+          where: { department_name: registrationData.department_name },
         });
-        if (rollExists) {
-          pendingRegistrations.delete(token);
-          return res.status(400).send(`
-            <html><body><h2>Roll Number Already Taken</h2></body></html>
-          `);
+        if (!dept) {
+          dept = await tx.department.create({
+            data: { department_name: registrationData.department_name },
+          });
         }
+        departmentId = dept.department_id;
       }
 
-      const hashedPassword = bcrypt.hashSync(registrationData.password, 10);
-      await prisma.user.create({
+      const newUser = await tx.user.create({
         data: {
           name: registrationData.name,
           email: registrationData.email,
-          password: hashedPassword,
-          isVerified: true,
+          password: registrationData.hashedPassword,
           role: registrationData.role || "GENERALUSER",
+          isVerified: true,
         },
       });
 
-      pendingRegistrations.delete(token);
+      if (registrationData.role === "STUDENT" && registrationData.roll_number) {
+        await tx.student.create({
+          data: {
+            roll_number: registrationData.roll_number,
+            department_id: departmentId,
+            user_id: newUser.user_id,
+          },
+        });
+      } else if (registrationData.role === "TEACHER") {
+        await tx.teacher.create({
+          data: {
+            designation: registrationData.designation || "Lecturer",
+            department_id: departmentId,
+            user_id: newUser.user_id,
+          },
+        });
+      } else {
+        await tx.generaluser.create({
+          data: { user_id: newUser.user_id },
+        });
+      }
+    });
 
-      return res.send(`
-        <html><body><h2>Email Verified</h2></body></html>
-      `);
-    } catch (err) {
-      logger.error("Verify email error:", err);
-      return res.status(400).send(`
-        <html><body><h2>Verification Failed</h2></body></html>
-      `);
-    }
+    return res.send(`<html><body><h2>Email Verified</h2></body></html>`);
+  } catch (err) {
+    logger.error("Verify email error:", err);
+    return res.status(400).send(`
+      <html><body><h2>Verification Failed</h2></body></html>
+    `);
   }
+}
+
 
   static async switchRole(req, res) {
     try {

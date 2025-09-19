@@ -1,122 +1,103 @@
-// import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-// const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
-// async function main() {
-//   console.log("Start seeding userdomain...");
+async function main() {
+  const adminEmail = 'admin@example.com';
+  const adminPlainPassword = 'admin123';
+  const adminHashed = bcrypt.hashSync(adminPlainPassword, 10);
 
-//   // Map of domain names to their IDs in the database
-//   const domains = await prisma.domain.findMany();
-//   const domainMap = {};
-//   for (const d of domains) domainMap[d.domain_name] = d.domain_id;
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      isMainAdmin: true,
+      isVerified: true,
+      role: 'ADMIN',
+    },
+    create: {
+      name: 'Main Admin',
+      email: adminEmail,
+      password: adminHashed,
+      role: 'ADMIN',
+      isVerified: true,
+      isMainAdmin: true,
+      profile_image: null,
+    },
+  });
 
-//   // User domains based on department
-//   const userDomains = [
-//     // user_id 2: CSE
-//     { user_id: 2, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Machine Learning"],
-//       domainMap["Data Science"],
-//       domainMap["Software Engineering"],
-//     ]},
+  await prisma.admin.upsert({
+    where: {
+  
+      admin_id: 1, 
+    update: {},
+    create: { user_id: adminUser.user_id },
+  }).catch(async () => {
+    const existingAdmin = await prisma.admin.findFirst({ where: { user_id: adminUser.user_id } });
+    if (!existingAdmin) {
+      await prisma.admin.create({ data: { user_id: adminUser.user_id } });
+    }
+  });
 
-//     // user_id 3: EEE
-//     { user_id: 3, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Computer Vision"],
-//       domainMap["Robotics"],
-//       domainMap["Embedded Systems"],
-//       domainMap["Power Electronics"],
-//     ]},
+  await prisma.department.createMany({
+    data: [
+      { department_name: 'CSE' },
+      { department_name: 'EEE' },
+    ],
+    skipDuplicates: true,
+  });
 
-//     // user_id 4: CSE
-//     { user_id: 4, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Machine Learning"],
-//       domainMap["Data Science"],
-//       domainMap["Software Engineering"],
-//     ]},
 
-//     // user_id 5: CSE
-//     { user_id: 5, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Machine Learning"],
-//       domainMap["Data Science"],
-//       domainMap["Software Engineering"],
-//     ]},
+  const domains = [
+    'Artificial Intelligence',
+    'Machine Learning',
+    'Computer Vision',
+    'Data Science',
+    'Robotics',
+    'Embedded Systems',
+    'Power Electronics',
+    'Control Systems',
+    'Renewable Energy Systems',
+    'Signal Processing',
+    'Microelectronics',
+    'VLSI Design',
+    'Software Engineering',
+    'Cybersecurity',
+    'Computer Networks',
+    'Databases and Information Systems',
+    'Human-Computer Interaction',
+    'Operating Systems',
+    'Distributed Systems',
+  ];
 
-//     // user_id 6: CSE
-//     { user_id: 6, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Machine Learning"],
-//       domainMap["Data Science"],
-//       domainMap["Software Engineering"],
-//     ]},
+  await prisma.domain.createMany({
+    data: domains.map((name) => ({ domain_name: name })),
+    skipDuplicates: true,
+  });
 
-//     // user_id 7: EEE
-//     { user_id: 7, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Computer Vision"],
-//       domainMap["Robotics"],
-//       domainMap["Embedded Systems"],
-//       domainMap["Power Electronics"],
-//     ]},
+  // ==== 4) userdomain: map admin to a few domains (optional) ====
+  // fetch some domains by name
+  const wanted = ['Software Engineering', 'Cybersecurity'];
+  const domainRows = await prisma.domain.findMany({
+    where: { domain_name: { in: wanted } },
+    select: { domain_id: true },
+  });
 
-//     // user_id 8: EEE
-//     { user_id: 8, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Computer Vision"],
-//       domainMap["Robotics"],
-//       domainMap["Embedded Systems"],
-//       domainMap["Power Electronics"],
-//     ]},
+  for (const d of domainRows) {
+   
+    await prisma.userdomain
+      .create({ data: { user_id: adminUser.user_id, domain_id: d.domain_id } })
+      .catch(() => {});
+  }
 
-//     // user_id 9: CSE
-//     { user_id: 9, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Machine Learning"],
-//       domainMap["Data Science"],
-//       domainMap["Software Engineering"],
-//     ]},
+  console.log('Seed complete');
+}
 
-//     // user_id 10: EEE
-//     { user_id: 10, domain_ids: [
-//       domainMap["Artificial Intelligence"],
-//       domainMap["Computer Vision"],
-//       domainMap["Robotics"],
-//       domainMap["Embedded Systems"],
-//       domainMap["Power Electronics"],
-//     ]},
-//   ];
-
-//   // Insert userdomain rows
-//   for (const ud of userDomains) {
-//     for (const domain_id of ud.domain_ids) {
-//       await prisma.userdomain.upsert({
-//         where: {
-//           user_id_domain_id: {
-//             user_id: ud.user_id,
-//             domain_id,
-//           },
-//         },
-//         update: {},
-//         create: {
-//           user_id: ud.user_id,
-//           domain_id,
-//         },
-//       });
-//       console.log(`Inserted domain ${domain_id} for user ${ud.user_id}`);
-//     }
-//   }
-
-//   console.log("Userdomain seeding completed.");
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error("Seeding failed:", e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+main()
+  .catch((e) => {
+    console.error('Seed failed', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

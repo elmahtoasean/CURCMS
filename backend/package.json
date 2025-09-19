@@ -8,6 +8,8 @@
     "start": "node server.js",
     "server": "nodemon server.js",
     "build": "echo \"No build step for backend\""
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:seed": "node ./prisma/seed.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

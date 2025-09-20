@@ -1,17 +1,5 @@
-{/* Research Resources */}
-              <div className="space-y-6">
-                <h4 className="font-bold text-xl sm:text-2xl lg:text-3xl mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                  Research Resources
-                </h4>
-                <ul className="space-y-3">
-                  <li>
-                    <a href="#" className="text-sm sm:text-base text-gray-300 hover:text-white transition-all duration-200 flex items-center space-x-3 group py-2 px-3 rounded-lg hover:bg-white/5">
-                      <FaBookOpen className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity duration-200" />
-                      <span>Publication Guidelines</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-sm sm:text-base text-gray-300 import { 
+// FooterSection.jsx
+import { 
   FaFacebookF, 
   FaInstagram, 
   FaTwitter, 
@@ -27,8 +15,8 @@
   FaNewspaper,
   FaCalendarAlt,
   FaChartLine
-} from "react-icons/fa"; 
- 
+} from "react-icons/fa";
+
 function Footer() { 
   const currentYear = new Date().getFullYear();
 
@@ -40,48 +28,12 @@ function Footer() {
   ];
 
   const socialLinks = [
-    { 
-      name: "Facebook", 
-      icon: FaFacebookF, 
-      href: "https://www.facebook.com", 
-      color: "hover:text-blue-400",
-      bgColor: "hover:bg-blue-400/10"
-    },
-    { 
-      name: "Instagram", 
-      icon: FaInstagram, 
-      href: "https://www.instagram.com", 
-      color: "hover:text-pink-400",
-      bgColor: "hover:bg-pink-400/10"
-    },
-    { 
-      name: "Twitter", 
-      icon: FaTwitter, 
-      href: "https://www.twitter.com", 
-      color: "hover:text-blue-300",
-      bgColor: "hover:bg-blue-300/10"
-    },
-    { 
-      name: "LinkedIn", 
-      icon: FaLinkedinIn, 
-      href: "https://www.linkedin.com", 
-      color: "hover:text-blue-500",
-      bgColor: "hover:bg-blue-500/10"
-    },
-    { 
-      name: "YouTube", 
-      icon: FaYoutube, 
-      href: "https://www.youtube.com", 
-      color: "hover:text-red-400",
-      bgColor: "hover:bg-red-400/10"
-    },
-    { 
-      name: "GitHub", 
-      icon: FaGithub, 
-      href: "https://www.github.com", 
-      color: "hover:text-gray-300",
-      bgColor: "hover:bg-gray-300/10"
-    },
+    { name: "Facebook", icon: FaFacebookF, href: "https://www.facebook.com", color: "hover:text-blue-400", bgColor: "hover:bg-blue-400/10" },
+    { name: "Instagram", icon: FaInstagram, href: "https://www.instagram.com", color: "hover:text-pink-400", bgColor: "hover:bg-pink-400/10" },
+    { name: "Twitter", icon: FaTwitter, href: "https://www.twitter.com", color: "hover:text-blue-300", bgColor: "hover:bg-blue-300/10" },
+    { name: "LinkedIn", icon: FaLinkedinIn, href: "https://www.linkedin.com", color: "hover:text-blue-500", bgColor: "hover:bg-blue-500/10" },
+    { name: "YouTube", icon: FaYoutube, href: "https://www.youtube.com", color: "hover:text-red-400", bgColor: "hover:bg-red-400/10" },
+    { name: "GitHub", icon: FaGithub, href: "https://www.github.com", color: "hover:text-gray-300", bgColor: "hover:bg-gray-300/10" },
   ];
 
   const researchStats = [
@@ -133,12 +85,9 @@ function Footer() {
               
               {/* Contact Information */}
               <div className="space-y-6">
-                <div>
-                  <h2 className="font-bold text-xl sm:text-2xl lg:text-3xl mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    Contact Information
-                  </h2>
-                </div>
-                
+                <h2 className="font-bold text-xl sm:text-2xl lg:text-3xl mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  Contact Information
+                </h2>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-3 group">
                     <FaMapMarkerAlt className="text-blue-400 mt-1 group-hover:text-blue-300 transition-colors duration-200" />
@@ -148,23 +97,15 @@ function Footer() {
                       <p>Hathazari, Chittagong</p>
                     </div>
                   </div>
-                  
                   <div className="flex items-center space-x-3 group">
                     <FaPhone className="text-green-400 group-hover:text-green-300 transition-colors duration-200" />
-                    <a 
-                      href="tel:01842308102" 
-                      className="text-sm sm:text-base text-gray-300 hover:text-white transition-colors duration-200"
-                    >
+                    <a href="tel:01842308102" className="text-sm sm:text-base text-gray-300 hover:text-white transition-colors duration-200">
                       01842308102
                     </a>
                   </div>
-                  
                   <div className="flex items-center space-x-3 group">
                     <FaEnvelope className="text-purple-400 group-hover:text-purple-300 transition-colors duration-200" />
-                    <a 
-                      href="mailto:universityresearchcell@.edu" 
-                      className="text-sm sm:text-base text-gray-300 hover:text-white transition-colors duration-200 break-all"
-                    >
+                    <a href="mailto:universityresearchcell@.edu" className="text-sm sm:text-base text-gray-300 hover:text-white transition-colors duration-200 break-all">
                       universityresearchcell@.edu
                     </a>
                   </div>
@@ -181,10 +122,7 @@ function Footer() {
                     const IconComponent = link.icon;
                     return (
                       <li key={index}>
-                        <a 
-                          href={link.href}
-                          className="text-sm sm:text-base text-gray-300 hover:text-white transition-all duration-200 flex items-center space-x-3 group py-2 px-3 rounded-lg hover:bg-white/5"
-                        >
+                        <a href={link.href} className="text-sm sm:text-base text-gray-300 hover:text-white transition-all duration-200 flex items-center space-x-3 group py-2 px-3 rounded-lg hover:bg-white/5">
                           <IconComponent className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity duration-200" />
                           <span>{link.name}</span>
                         </a>
@@ -199,19 +137,12 @@ function Footer() {
                 <h4 className="font-bold text-xl sm:text-2xl lg:text-3xl mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                   Follow Us
                 </h4>
-                
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                   {socialLinks.map((social, index) => {
                     const IconComponent = social.icon;
                     return (
-                      <a
-                        key={index}
-                        href={social.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`group w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-300 transform hover:scale-110 hover:rotate-3 ${social.bgColor}`}
-                        aria-label={social.name}
-                      >
+                      <a key={index} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.name}
+                        className={`group w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-300 transform hover:scale-110 hover:rotate-3 ${social.bgColor}`}>
                         <IconComponent className={`text-lg sm:text-xl text-gray-300 ${social.color} transition-all duration-200`} />
                       </a>
                     );
@@ -223,11 +154,8 @@ function Footer() {
                   <h5 className="font-semibold text-base sm:text-lg mb-3">Stay Updated</h5>
                   <p className="text-sm text-gray-300 mb-4">Get the latest research updates delivered to your inbox.</p>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <input 
-                      type="email" 
-                      placeholder="Enter your email"
-                      className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    />
+                    <input type="email" placeholder="Enter your email"
+                      className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"/>
                     <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium whitespace-nowrap">
                       Subscribe
                     </button>
@@ -244,7 +172,6 @@ function Footer() {
               <div className="text-xs sm:text-sm text-gray-400 text-center sm:text-left">
                 © {currentYear} University Research Cell. All rights reserved.
               </div>
-              
               <div className="flex items-center space-x-4 text-xs sm:text-sm text-gray-400">
                 <span>Made with</span>
                 <span className="text-red-400 animate-pulse">♥</span>
@@ -257,5 +184,5 @@ function Footer() {
     </> 
   ); 
 } 
- 
+
 export default Footer;

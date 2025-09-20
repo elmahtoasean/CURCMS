@@ -151,7 +151,7 @@ import "./jobs/index.js";
 
 const frontendRedirectIgnorePrefixes = ["/api", "/uploads", "/documents", "/images"]; // Paths served by the backend
 
-app.get("/.*/", (req, res, next) => {
+app.get(/.*/, (req, res, next) => {
   if (req.method !== "GET") {
     return next();
   }

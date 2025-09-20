@@ -14,26 +14,31 @@ function LandingPage() {
 
   // Function to scroll smoothly to Accepted Papers
   const scrollToAcceptedPapers = () => {
-    acceptedPapersRef.current?.scrollIntoView({ behavior: "smooth" });
+    acceptedPapersRef.current?.scrollIntoView({ 
+      behavior: "smooth",
+      block: "start"
+    });
   };
+
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Pass scroll function as prop */}
       <HeroSection onBrowseClick={scrollToAcceptedPapers} />
 
-      {/* Section reference */}
-      <div ref={acceptedPapersRef}>
+      {/* Section reference with enhanced spacing */}
+      <div ref={acceptedPapersRef} className="scroll-mt-20">
         <AcceptedPaper
           user={user}
           token={token}
           onNavigateToLogin={() => navigate("/login")}
         />
       </div>
-      {/* <Conferences/> */}
+
       <LockSection />
       <JoinSection />
       <Footer />
     </div>
   );
 }
+
 export default LandingPage;

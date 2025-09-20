@@ -5,55 +5,101 @@ function HeroSection({ onBrowseClick }) {
     <div className="font-sans">
       {/* Hero Section with Background Image */}
       <div className="relative w-full h-screen overflow-hidden">
-        <img
-          src="/image1.png"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black bg-opacity-25" />
+        {/* Background Image with Parallax Effect */}
+        <div className="absolute inset-0 transform scale-110 transition-transform duration-1000 ease-out">
+          <img
+            src="/image1.png"
+            alt="Research Background"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {/* Gradient Overlay for Better Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-        {/* Content */}
-        <div className="relative z-10 h-full flex flex-col justify-center items-start md:ml-10 px-6 text-black">
-          <header className="absolute top-0 left-0 right-0 flex justify-between items-center -ml-12 px-10 h-20 bg-gray-100 shadow">
-            <img src="/search.png" alt="Logo" className="w-16 h-10 ml-6" />
-            <h1 className="text-xl md:text-4xl text-black font-bold ml-5 text-justify md:pl-32">
-              University Research Cell
-            </h1>
-            <div className="flex md:space-x-4 space-x-4 ml-12 mr-5">
+        {/* Header Navigation */}
+        <header className="absolute top-0 left-0 right-0 z-20 transition-all duration-300 backdrop-blur-sm bg-gray-100/95 shadow-lg border-b border-gray-200/50">
+          <div className="flex justify-between items-center px-4 sm:px-6 lg:px-10 h-16 sm:h-20">
+            {/* Logo Section */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <img 
+                src="/search.png" 
+                alt="University Logo" 
+                className="w-10 h-6 sm:w-16 sm:h-10 object-contain transition-transform duration-300 hover:scale-105" 
+              />
+              <h1 className="text-sm sm:text-xl lg:text-3xl xl:text-4xl text-gray-900 font-bold leading-tight">
+                <span className="block sm:inline">University</span>
+                <span className="block sm:inline sm:ml-2">Research Cell</span>
+              </h1>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex space-x-2 sm:space-x-4">
               <Link
                 to="/login"
-                className="px-4 md:py-2 bg-black hover:bg-gray-600 text-white rounded text-sm font-medium"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-2.5 bg-gray-900 hover:bg-gray-700 text-white rounded-lg text-sm sm:text-base font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95"
               >
                 Login
               </Link>
               <Link
                 to="/signup"
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded text-sm font-medium"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-lg text-sm sm:text-base font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95"
               >
                 Sign Up
               </Link>
             </div>
-          </header>
+          </div>
+        </header>
 
-          {/* Hero Text */}
-          <main className="max-w-3xl mt-20 md:mt-0">
-            <h2 className="text-3xl md:text-4xl italic font-bold mb-6 max-w-xl text-black drop-shadow">
-              Where Ideas Meet Impact: Research, Collaborate, Innovate
-            </h2>
-            <p className="text-xl max-w-xl italic mb-10 text-black drop-shadow">
-              Discover groundbreaking research, connect with fellow researchers,
-              and stay updated with the latest academic conferences from our
-              university community.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6">
-              <button
-                onClick={onBrowseClick}
-                className="px-8 py-3 bg-gray-900 hover:bg-gray-700 text-white rounded text-lg font-medium"
-              >
-                Browse Accepted Papers
-              </button>
+        {/* Main Hero Content */}
+        <main className="relative z-10 h-full flex items-center justify-start">
+          <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
+            <div className="max-w-4xl">
+              {/* Main Headline */}
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 text-white leading-tight">
+                <span className="block italic drop-shadow-lg">Where Ideas Meet Impact:</span>
+                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mt-2 font-semibold drop-shadow-lg">
+                  Research, Collaborate, Innovate
+                </span>
+              </h2>
+
+              {/* Subheading */}
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-8 sm:mb-10 text-white/95 max-w-3xl leading-relaxed drop-shadow-md font-medium">
+                Discover groundbreaking research, connect with fellow researchers,
+                and stay updated with the latest academic conferences from our
+                university community.
+              </p>
+
+              {/* Call to Action Button */}
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                <button
+                  onClick={onBrowseClick}
+                  className="group px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gray-900 hover:bg-gray-700 text-white rounded-xl text-base sm:text-lg lg:text-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  <span>Browse Accepted Papers</span>
+                  <svg 
+                    className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </main>
+          </div>
+        </main>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="flex flex-col items-center animate-bounce">
+            <span className="text-white text-sm mb-2 opacity-75">Scroll to explore</span>
+            <svg className="w-6 h-6 text-white opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
